@@ -1,5 +1,5 @@
 # PICKLED - Platform for Instant Config Keep & Lightweight Export Daemon
-## Network Configuration Backup Manager
+## Network Configuration Backup Manager developed by Luca Armiraglio & Mattia Mattavelli
 
 Because broken routers don’t explain themselves
 
