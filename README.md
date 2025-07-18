@@ -1,3 +1,6 @@
+![alt text]https://github.com/AlastorApps/pickled/blob/main/PICKLED_logo.png?raw=true)
+
+
 # PICKLED - Platform for Instant Config Keep & Lightweight Export Daemon
 ## Network Configuration Backup Manager developed by Luca Armiraglio & Mattia Mattavelli
 
