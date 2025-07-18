@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 from flask import Flask, request, jsonify, render_template_string, send_from_directory, send_file, redirect, session
 from flask_wtf.csrf import CSRFProtect, generate_csrf
-import paramiko
+from netmiko import ConnectHandler, NetMikoTimeoutException, NetMikoAuthenticationException
 import io
 from functools import wraps
 from datetime import datetime
@@ -22,9 +22,9 @@ import base64
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
-app.secret_key = 'secret_key_to_change'  # Chiave segreta per le sessioni
+app.secret_key = 'chiavesegreta1'  # Chiave segreta per le sessioni
 app.config['WTF_CSRF_ENABLED'] = True
-app.config['WTF_CSRF_SECRET_KEY'] = 'csrf_secret_key_to_change'  # Chiave segreta per CSRF
+app.config['WTF_CSRF_SECRET_KEY'] = 'csrfsecretkey123'  # Chiave segreta per CSRF
 csrf = CSRFProtect(app)
 
 # Credenziali hardcoded
@@ -88,13 +88,28 @@ def decrypt_password(encrypted_password):
 # Funzioni di persistenza dati
 def load_switches():
     try:
-        if os.path.exists(SWITCHES_FILE):
-            with open(SWITCHES_FILE, 'r', encoding='utf-8-sig') as f:
-                switches_data = json.load(f)
-                return switches_data
+        if not os.path.exists(SWITCHES_FILE):
+            return []
+
+        with open(SWITCHES_FILE, 'r', encoding='utf-8-sig') as f:
+            content = f.read().strip()
+            if not content:
+                return []
+            
+            switches_data = json.loads(content)
+            
+            # Correzione: garantiamo che enable_password sia sempre valorizzato
+            for switch in switches_data:
+                if not switch.get('enable_password'):
+                    switch['enable_password'] = switch['password']
+            
+            return switches_data
+            
+    except json.JSONDecodeError as e:
+        logger.error(f"Invalid JSON in switches file: {str(e)}")
         return []
-    except (json.JSONDecodeError, FileNotFoundError) as e:
-        logger.error(f"Error during device update: {str(e)}")
+    except Exception as e:
+        logger.error(f"Error loading switches: {str(e)}")
         return []
 
 def save_switches(switches_data):
@@ -194,14 +209,6 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-def clean_config_output(output, hostname):
-    config = output.split('show running-config')[-1].split('show startup-config')[-1]
-    prompt_patterns = [f"{hostname}#", f"{hostname.split('.')[0]}#", '#']
-    for pattern in prompt_patterns:
-        if pattern in config:
-            config = config.split(pattern)[0]
-    return config.strip()
-
 def get_schedule_description(schedule):
     desc = ''
     time_str = schedule.get('time', '00:00')
@@ -289,17 +296,28 @@ def csrf_exempt_login_required(f):
 def add_switch():
     data = request.get_json()
     if not all(key in data for key in ['hostname', 'ip', 'username', 'password']):
-        return jsonify({'success': False, 'message': 'Dati mancanti'})
+        return jsonify({'success': False, 'message': 'Missing data'})
     
-    data['password'] = encrypt_password(data['password'])
-    data['enable_password'] = encrypt_password(data.get('enable_password', data['password']))
+    # Encrypt passwords
+    encrypted_password = encrypt_password(data['password'])
+    # Garantiamo che enable_password sia sempre uguale a password se non specificato
+    encrypted_enable = encrypt_password(data.get('enable_password', data['password']))
+    
+    switch_data = {
+        'hostname': data['hostname'],
+        'ip': data['ip'],
+        'username': data['username'],
+        'password': encrypted_password,
+        'enable_password': encrypted_enable,  # Questo campo non sarà mai vuoto
+        'device_type': data.get('device_type', 'cisco_ios')
+    }
     
     switches_data = load_switches()
-    switches_data.append(data)
+    switches_data.append(switch_data)
     save_switches(switches_data)
     
-    logger.info(f"Aggiunto switch: {data['hostname']} ({data['ip']})")
-    return jsonify({'success': True, 'message': 'Switch aggiunto'})
+    logger.info(f"Added switch: {data['hostname']} ({data['ip']})")
+    return jsonify({'success': True, 'message': 'Switch added successfully'})
 
 @app.route('/get_switches', methods=['GET'])
 @login_required
@@ -320,14 +338,18 @@ def update_switch():
     if 0 <= index < len(switches_data):
         old_hostname = switches_data[index]['hostname']
         
+        # Keep existing passwords if not provided, otherwise encrypt new ones
         password = encrypt_password(data['password']) if 'password' in data and data['password'] else switches_data[index]['password']
+        # For enable_password, use the new password if provided, otherwise keep existing enable_password
+        enable_password = encrypt_password(data['enable_password']) if 'enable_password' in data and data['enable_password'] else password
         
         switches_data[index] = {
             'hostname': data['hostname'],
             'ip': data['ip'],
             'username': data['username'],
             'password': password,
-            'enable_password': password
+            'enable_password': enable_password,
+            'device_type': data.get('device_type', switches_data[index].get('device_type', 'cisco_ios'))
         }
         
         save_switches(switches_data)
@@ -363,73 +385,213 @@ def delete_switch():
 @app.route('/backup_switch', methods=['POST'])
 @login_required
 def backup_switch_http():
-    data = request.get_json()
-    result = backup_switch(data)
-    
-    switches_data = load_switches()
-    if 'index' in data and 0 <= data['index'] < len(switches_data):
-        result['hostname'] = switches_data[data['index']]['hostname']
-        result['ip'] = switches_data[data['index']]['ip']
-    
-    return jsonify(result)
-
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'message': 'Invalid request data'})
+            
+        result = backup_switch(data)
+        return jsonify(result)
+        
+    except Exception as e:
+        logger.error(f"Error in backup_switch_http: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'message': 'Internal server error',
+            'error_type': 'ServerError'
+        }), 500
+        
 def backup_switch(params):
-    index = params.get('index')
-    if index is None:
-        return {'success': False, 'message': 'Indice mancante'}
-    
-    switches_data = load_switches()
-    if index < 0 or index >= len(switches_data):
-        return {'success': False, 'message': 'Indice switch non valido'}
-    
-    switch = switches_data[index]
-    hostname = switch['hostname']
-    ip = switch['ip']
-    username = switch['username']
-    password = decrypt_password(switch['password'])
-    enable_password = decrypt_password(switch.get('enable_password', switch['password']))
+    logger.debug(f"Starting backup with params: {params}")
     
     try:
+        # Parameter validation
+        index = params.get('index')
+        if index is None:
+            error_msg = "Backup failed: Missing index parameter"
+            logger.error(error_msg)
+            return {'success': False, 'message': error_msg}
+
+        switches_data = load_switches()
+        if not isinstance(switches_data, list):
+            error_msg = "Invalid switches data format"
+            logger.error(error_msg)
+            return {'success': False, 'message': error_msg}
+
+        if index < 0 or index >= len(switches_data):
+            error_msg = f"Backup failed: Invalid switch index {index}"
+            logger.error(error_msg)
+            return {'success': False, 'message': error_msg}
+
+        # Device information extraction
+        switch = switches_data[index]
+        hostname = switch['hostname']
+        ip = switch['ip']
+        username = switch['username']
+        password = decrypt_password(switch['password'])
+        enable_password = decrypt_password(switch['enable_password'])
+        device_type = switch.get('device_type', 'cisco_ios')
+        custom_command = switch.get('backup_command')  # Custom backup command if specified
+
+        # Device connection parameters
+        device = {
+            'device_type': device_type,
+            'host': ip,
+            'username': username,
+            'password': password,
+            'secret': enable_password,
+            'timeout': 150,  # Increased to 150 seconds
+            'session_timeout': 150,
+            'global_delay_factor': 3,
+            'fast_cli': False,
+            'allow_auto_change': True,  # Allow automatic adjustment of connection parameters
+            'verbose': False
+        }
+
+        logger.debug(f"[{hostname}] Connection parameters: { {k:v for k,v in device.items() if k not in ['password', 'secret']} }")
+
+        # Backup file preparation
         switch_folder = os.path.join(BACKUP_DIR, secure_filename(hostname))
         os.makedirs(switch_folder, exist_ok=True)
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        running_filename = f"{hostname}_running-config_{timestamp}.txt"
-        running_path = os.path.join(switch_folder, running_filename)
-        
-        ssh = paramiko.SSHClient()
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect(ip, username=username, password=password, timeout=10)
-        
-        chan = ssh.invoke_shell()
-        chan.send('enable\n')
-        time.sleep(1)
-        chan.send(enable_password + '\n')
-        time.sleep(1)
-        chan.send('terminal length 0\n')
-        time.sleep(1)
-        chan.send('show running-config\n')
-        time.sleep(5)
-        output = chan.recv(65535).decode('utf-8')
-        
-        clean_config = clean_config_output(output, hostname)
-        
-        with open(running_path, 'w') as f:
-            f.write(clean_config)
-        
-        ssh.close()
-        
-        logger.info(f"Backup completato per {hostname} ({ip})")
-        return {
-            'success': True,
-            'message': 'Backup completato',
-            'hostname': hostname,
-            'ip': ip,
-            'filename': running_filename
-        }
-        
-    except Exception as e:
-        error_msg = f"Error during backup: {str(e)}"
-        logger.error(f"Error during backup of {hostname} ({ip}): {error_msg}")
+        backup_filename = f"{hostname}_config_{timestamp}.txt"
+        backup_path = os.path.join(switch_folder, backup_filename)
+
+        # Comprehensive command list to try
+        command_list = [
+            custom_command,  # Try custom command first if specified
+            'show running-config',
+            '\nshow running-config',
+            'show startup-config',
+            'show config',
+            'show configuration',
+            'show current-configuration',
+            'show full-configuration',
+            'more system:running-config',
+            'show tech-support | begin Running configuration',
+            'terminal length 0\nshow running-config',
+            'enable\nshow running-config'
+        ]
+
+        # Remove any None values (if custom_command not specified)
+        try:
+            with ConnectHandler(**device) as net_connect:
+                logger.info(f"[{hostname}] Connected successfully, starting advanced backup procedure")
+
+                # Enter enable mode if needed
+                try:
+                    net_connect.enable()
+                    logger.info(f"[{hostname}] Entered enable mode successfully")
+                except Exception as e:
+                    logger.warning(f"[{hostname}] Enable mode not required: {str(e)}")
+
+                # Start interactive shell session
+                net_connect.write_channel('\n')  # Send initial return
+                time.sleep(1)
+                initial_prompt = net_connect.read_channel()
+                logger.debug(f"[{hostname}] Initial prompt: {initial_prompt}")
+
+                # Send pagination disable commands
+                pagination_commands = [
+                    'terminal length 0\n',
+                    'terminal width 512\n',
+                    'set cli screen-length 0\n'
+                ]
+
+                for cmd in pagination_commands:
+                    net_connect.write_channel(cmd)
+                    time.sleep(2)
+                    output = net_connect.read_channel()
+                    logger.debug(f"[{hostname}] Pagination command response: {output}")
+
+                # Start configuration capture
+                config_commands = [
+                    'show running-config\n',
+                    'show running-config all\n',
+                    'show tech-support | begin Running configuration\n'
+                ]
+
+                full_output = ""
+                for cmd in config_commands:
+                    logger.info(f"[{hostname}] Sending command: {cmd.strip()}")
+                    net_connect.write_channel(cmd)
+                    
+                    # Progressive output collection
+                    start_time = time.time()
+                    while time.time() - start_time < 60:  # 60 second timeout per command
+                        time.sleep(3)
+                        new_data = net_connect.read_channel()
+                        if new_data:
+                            full_output += new_data
+                            logger.debug(f"[{hostname}] Received {len(new_data)} bytes")
+                            
+                            # Check for termination patterns
+                            if any(pattern in new_data for pattern in ['#', 'end', '--More--']):
+                                if '--More--' in new_data:
+                                    net_connect.write_channel(' ')  # Send space for more
+                                break
+                        else:
+                            break
+
+                # Final cleanup and prompt exit
+                net_connect.write_channel('exit\n')
+                time.sleep(1)
+                net_connect.read_channel()
+
+                # Validate captured output
+                if len(full_output.splitlines()) < 20:
+                    raise Exception("Insufficient configuration data captured")
+
+                # Clean and save configuration
+                clean_output = "\n".join(
+                    line for line in full_output.splitlines() 
+                    if not any(line.startswith(cmd) for cmd in ['show', 'terminal', 'enable', 'conf t', 'exit'])
+                )
+                with open(backup_path, 'w', encoding='utf-8') as f:
+                    f.write(clean_output)
+
+                logger.info(f"[{hostname}] Backup completed successfully with interactive capture")
+                return {
+                    'success': True,
+                    'message': "Backup completed with interactive capture",
+                    'hostname': hostname,
+                    'ip': ip,
+                    'filename': backup_filename
+                }
+
+        except Exception as e:
+            logger.error(f"[{hostname}] Interactive capture failed: {str(e)}")
+            raise  # Fall through to next attempt
+
+        # If interactive capture fails, try last-resort method
+        logger.warning(f"[{hostname}] Trying last-resort backup method")
+        try:
+            with ConnectHandler(**device) as net_connect:
+                # Ultra-simple approach for problematic devices
+                output = net_connect.send_command_timing('show running-config', delay_factor=5, max_loops=3000)
+                
+                if not output or len(output.splitlines()) < 10:
+                    raise Exception("Insufficient output")
+                
+                with open(backup_path, 'w', encoding='utf-8') as f:
+                    f.write(output)
+
+                logger.info(f"[{hostname}] Backup completed with last-resort method")
+                return {
+                    'success': True,
+                    'message': "Backup completed with last-resort method",
+                    'hostname': hostname,
+                    'ip': ip,
+                    'filename': backup_filename
+                }
+
+        except Exception as e:
+            logger.error(f"[{hostname}] Last-resort method failed: {str(e)}")
+            raise
+
+    except (NetMikoTimeoutException, NetMikoAuthenticationException) as e:
+        error_msg = f"Connection error to {hostname} ({ip}): {str(e)}"
+        logger.error(error_msg)
         return {
             'success': False,
             'message': error_msg,
@@ -438,29 +600,92 @@ def backup_switch(params):
             'error_type': type(e).__name__
         }
 
+    except Exception as e:
+        error_msg = f"All backup methods failed for {hostname} ({ip}): {str(e)}"
+        logger.error(error_msg)
+        return {
+            'success': False,
+            'message': error_msg,
+            'hostname': hostname,
+            'ip': ip,
+            'error_type': 'AllMethodsFailed'
+        }
+
 @app.route('/backup_all_switches', methods=['POST'])
 @login_required
 def backup_all_switches():
-    switches_data = load_switches()
-    results = []
-    
-    for i in range(len(switches_data)):
-        result = backup_switch({'index': i, 'scheduled': False})
-        results.append({
-            'success': result.get('success', False),
-            'hostname': switches_data[i]['hostname'],
-            'ip': switches_data[i]['ip'],
-            'message': result.get('message', ''),
-            'filename': result.get('filename', '')
+    try:
+        logger.info("Starting backup process for all devices")
+        
+        # Carica gli switch con controllo errori rinforzato
+        try:
+            switches_data = load_switches()
+            if not isinstance(switches_data, list):
+                error_msg = "Invalid switches data format"
+                logger.error(error_msg)
+                return jsonify({
+                    'success': False,
+                    'message': error_msg,
+                    'count': 0,
+                    'total': 0,
+                    'results': []
+                })
+        except Exception as e:
+            error_msg = f"Failed to load switches: {str(e)}"
+            logger.error(error_msg)
+            return jsonify({
+                'success': False,
+                'message': error_msg,
+                'count': 0,
+                'total': 0,
+                'results': []
+            })
+
+        if not switches_data:
+            logger.warning("No devices configured for backup")
+            return jsonify({
+                'success': False,
+                'message': 'No devices configured',
+                'count': 0,
+                'total': 0,
+                'results': []
+            })
+
+        results = []
+        for i, switch in enumerate(switches_data, 1):
+            progress_msg = f"Processing device {i}/{len(switches_data)}: {switch['hostname']}"
+            logger.info(progress_msg)
+            
+            result = backup_switch({'index': i-1})
+            results.append({
+                'success': result.get('success', False),
+                'hostname': switch['hostname'],
+                'ip': switch['ip'],
+                'message': result.get('message', ''),
+                'filename': result.get('filename', '')
+            })
+
+        success_count = sum(1 for r in results if r['success'])
+        completion_msg = f"Backup completed. Success: {success_count}/{len(switches_data)}"
+        logger.info(completion_msg)
+        
+        return jsonify({
+            'success': True,
+            'count': success_count,
+            'total': len(switches_data),
+            'results': results
         })
-    
-    success_count = sum(1 for r in results if r['success'])
-    return jsonify({
-        'success': True,
-        'count': success_count,
-        'total': len(switches_data),
-        'results': results
-    })
+
+    except Exception as e:
+        error_msg = f"Unexpected error in backup_all_switches: {str(e)}"
+        logger.error(error_msg, exc_info=True)
+        return jsonify({
+            'success': False,
+            'message': error_msg,
+            'count': 0,
+            'total': 0,
+            'results': []
+        }), 500
 
 @app.route('/get_switch_backups', methods=['POST'])
 @login_required
@@ -665,18 +890,23 @@ def upload_csv():
         
         for row in csv_reader:
             if not all(field in row for field in ['hostname', 'ip', 'username', 'password']):
-                return jsonify({'success': False, 'message': 'CSV format no avalaible'})
+                return jsonify({'success': False, 'message': 'CSV format not valid'})
             
             if row['ip'] in existing_ips:
                 skipped += 1
                 continue
             
+            # Always set enable_password equal to password if not provided in CSV
+            encrypted_password = encrypt_password(row['password'])
+            encrypted_enable_password = encrypt_password(row.get('enable_password', row['password']))
+            
             switches_data.append({
                 'hostname': row['hostname'],
                 'ip': row['ip'],
                 'username': row['username'],
-                'password': encrypt_password(row['password']),
-                'enable_password': encrypt_password(row.get('enable_password', row['password']))
+                'password': encrypted_password,
+                'enable_password': encrypted_enable_password,
+                'device_type': row.get('device_type', 'cisco_ios')
             })
             existing_ips.add(row['ip'])
             added += 1
@@ -694,7 +924,7 @@ def upload_csv():
     except Exception as e:
         logger.error(f"Error while loading CSV: {str(e)}")
         return jsonify({'success': False, 'message': str(e)})
-
+        
 @app.route('/export_switches_csv', methods=['GET'])
 @login_required
 def export_switches_csv():
@@ -759,6 +989,27 @@ HTML_TEMPLATE = """
             padding: 0;
             background-color: var(--gray-light);
         }
+    .log {
+        margin-top: 30px;
+        max-height: 300px;
+        overflow-y: auto;
+        background-color: #1a1a1a;
+        color: #e0e0e0;
+        padding: 15px;
+        border-radius: 4px;
+        font-family: monospace;
+        white-space: pre-wrap;
+        font-size: 14px;
+        line-height: 1.5;
+    }
+    .log div {
+        margin-bottom: 5px;
+        padding: 3px 5px;
+        border-radius: 3px;
+    }
+    .log div:hover {
+        background-color: #2a2a2a;
+    }
         .app-container {
             display: flex;
             min-height: 100vh;
@@ -842,11 +1093,19 @@ HTML_TEMPLATE = """
         button:hover {
             background-color: var(--primary-hover);
         }
+        .status-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            max-width: 400px;
+        }
         .status {
-            margin-top: 20px;
             padding: 15px;
             border-radius: 4px;
+            margin-bottom: 10px;
             display: none;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         }
         .success {
             background-color: #d4edda;
@@ -1119,6 +1378,9 @@ HTML_TEMPLATE = """
     </style>
 </head>
 <body>
+    <div class="status-container">
+        <div id="status-message" class="status"></div>
+    </div>
     <div class="app-container">
         <!-- Pannello sinistro - Form aggiunta switch -->
         <div class="left-panel">
@@ -1139,6 +1401,20 @@ HTML_TEMPLATE = """
                 <label for="password">Password:</label>
                 <input type="password" id="password" placeholder="Password SSH">
             </div>
+    	    <div class="form-group">
+	        <label for="enable-password">Enable Password (optional):</label>
+	        <input type="password" id="enable-password" placeholder="Enable/Secret password">
+	    </div>
+            <div class="form-group">
+	    <label for="device-type">Tipo dispositivo:</label>
+	    <select id="device-type" class="form-control">
+		<option value="cisco_ios">Cisco IOS</option>
+		<option value="cisco_xe">Cisco IOS-XE</option>
+		<option value="cisco_xr">Cisco IOS-XR</option>
+		<option value="huawei">Huawei</option>
+		<option value="juniper">Juniper JunOS</option>
+	    </select>
+	    </div>
             <button onclick="addSwitch()">Add Switch</button>
             
             <h2 style="margin-top: 30px;">Load CSV</h2>
@@ -1357,18 +1633,30 @@ HTML_TEMPLATE = """
         let currentSortColumn = -1;
         let sortDirection = 1;
 
-        function addSwitch() {
-            const hostname = document.getElementById('hostname').value;
-            const ip = document.getElementById('ip').value;
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
+	function addSwitch() {
+	    const hostname = document.getElementById('hostname').value;
+	    const ip = document.getElementById('ip').value;
+	    const username = document.getElementById('username').value;
+	    const password = document.getElementById('password').value;
+	    const enablePassword = document.getElementById('enable-password').value;
+	    const deviceType = document.getElementById('device-type').value;
 
-            if (!hostname || !ip || !username || !password) {
-                showStatus('Please fill of the forms', 'error');
-                return;
-            }
+	    if (!hostname || !ip || !username || !password) {
+		showStatus('Please fill all required fields', 'error');
+		return;
+	    }
 
-            const switchData = { hostname, ip, username, password };
+	    const switchData = { 
+		hostname, 
+		ip, 
+		username, 
+		password,
+		device_type: deviceType
+	    };
+	    
+	    if (enablePassword) {
+		switchData.enable_password = enablePassword;
+	    }
             
             fetch('/add_switch', {
                 method: 'POST',
@@ -1450,64 +1738,64 @@ HTML_TEMPLATE = """
             updateSwitchTable();
         }
 
-        function updateSwitchTable() {
-            fetch('/get_switches')
-            .then(response => response.json())
-            .then(switchesData => {
-                const tbody = document.getElementById('switches-table-body');
-                tbody.innerHTML = '';
+	function updateSwitchTable() {
+	    fetch('/get_switches')
+	    .then(response => response.json())
+	    .then(switchesData => {
+		const tbody = document.getElementById('switches-table-body');
+		tbody.innerHTML = '';
 
-                if (switchesData.length === 0) {
-                    tbody.innerHTML = '<td colspan="4" style="text-align: center;">No device</td>';
-                    return;
-                }
+		if (switchesData.length === 0) {
+		    tbody.innerHTML = '<td colspan="4" style="text-align: center;">No device</td>';
+		    return;
+		}
 
-                let switchesWithIndex = switchesData.map((sw, index) => ({...sw, originalIndex: index}));
+		let switchesWithIndex = switchesData.map((sw, index) => ({...sw, originalIndex: index}));
 
-                if (currentSortColumn >= 0) {
-                    switchesWithIndex.sort((a, b) => {
-                        const keys = ['hostname', 'ip', 'username'];
-                        const key = keys[currentSortColumn];
-                        const valA = a[key]?.toLowerCase() || '';
-                        const valB = b[key]?.toLowerCase() || '';
-                        
-                        if (valA < valB) return -1 * sortDirection;
-                        if (valA > valB) return 1 * sortDirection;
-                        return 0;
-                    });
-                }
+		if (currentSortColumn >= 0) {
+		    switchesWithIndex.sort((a, b) => {
+		        const keys = ['hostname', 'ip', 'username'];
+		        const key = keys[currentSortColumn];
+		        const valA = a[key]?.toLowerCase() || '';
+		        const valB = b[key]?.toLowerCase() || '';
+		        
+		        if (valA < valB) return -1 * sortDirection;
+		        if (valA > valB) return 1 * sortDirection;
+		        return 0;
+		    });
+		}
 
-                switchesWithIndex.forEach((sw, i) => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${sw.hostname}</td>
-                        <td>${sw.ip}</td>
-                        <td>${sw.username}</td>
-                        <td>
-                            <button class="action-btn backup-btn" title="Backup" onclick="backupSwitch(${i})">
-                                <i class="fas fa-download"></i>
-                            </button>
-                            <button class="action-btn edit-btn" title="Modifica" onclick="openEditModal(${i})">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="action-btn view-btn" title="Visualizza Backup" onclick="viewBackups(${i})">
-                                <i class="fas fa-eye"></i>
-                            </button>
-                            <button class="action-btn delete-btn" title="Elimina" onclick="deleteSwitch(${i})">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    `;
-                    tbody.appendChild(row);
-                });
+		switchesWithIndex.forEach((sw, i) => {
+		    const row = document.createElement('tr');
+		    row.innerHTML = `
+		        <td>${sw.hostname}</td>
+		        <td>${sw.ip}</td>
+		        <td>${sw.username}</td>
+		        <td>
+		            <button class="action-btn backup-btn" title="Backup" onclick="backupSwitch(${sw.originalIndex})">
+		                <i class="fas fa-download"></i>
+		            </button>
+		            <button class="action-btn edit-btn" title="Modifica" onclick="openEditModal(${sw.originalIndex})">
+		                <i class="fas fa-edit"></i>
+		            </button>
+		            <button class="action-btn view-btn" title="Visualizza Backup" onclick="viewBackups(${sw.originalIndex})">
+		                <i class="fas fa-eye"></i>
+		            </button>
+		            <button class="action-btn delete-btn" title="Elimina" onclick="deleteSwitch(${sw.originalIndex})">
+		                <i class="fas fa-trash"></i>
+		            </button>
+		        </td>
+		    `;
+		    tbody.appendChild(row);
+		});
 
-                updateSortIcons();
-            })
-            .catch(error => {
-                console.error('Device load failed:', error);
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: red;">Error during the device update</td></tr>';
-            });
-        }
+		updateSortIcons();
+	    })
+	    .catch(error => {
+		console.error('Device load failed:', error);
+		tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: red;">Error during the device update</td></tr>';
+	    });
+	}
 
         function updateSortIcons() {
             const headers = document.querySelectorAll('.switch-table th');
@@ -1562,33 +1850,46 @@ HTML_TEMPLATE = """
 	    });
 	}
 
-        function backupSwitch(index) {
-            addToLog(`Avvio backup per switch con indice ${index}...`);
-            
-            fetch('/backup_switch', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCSRFToken()
-                },
-                body: JSON.stringify({ index: parseInt(index) }),
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showStatus(`Backup completed for ${data.hostname}`, 'success');
-                    addToLog(`Backup completed for ${data.hostname} (${data.ip})`);
-                    addToLog(`Config saved at: ${data.filename}`);
-                } else {
-                    showStatus('Backup error: ' + data.message, 'error');
-                    addToLog(`ERROR - backup failed: ${data.message}`);
-                }
-            })
-            .catch(error => {
-                showStatus('Connection error: ' + error, 'error');
-                addToLog(`ERROR - Connection: ${error}`);
-            });
-        }
+	function backupSwitch(index) {
+	    // Prima recuperiamo i dati dello switch per ottenere l'hostname
+	    fetch('/get_switches')
+	    .then(response => response.json())
+	    .then(switchesData => {
+		if (index >= 0 && index < switchesData.length) {
+		    const switchData = switchesData[index];
+		    addToLog(`Starting backup for ${switchData.hostname} (${switchData.ip})...`);
+		    
+		    // Poi eseguiamo il backup
+		    fetch('/backup_switch', {
+		        method: 'POST',
+		        headers: {
+		            'Content-Type': 'application/json',
+		            'X-CSRFToken': getCSRFToken()
+		        },
+		        body: JSON.stringify({ index: parseInt(index) }),
+		    })
+		    .then(response => response.json())
+		    .then(data => {
+		        if (data.success) {
+		            showStatus(`Backup completed for ${data.hostname}`, 'success');
+		            addToLog(`Backup completed for ${data.hostname} (${data.ip})`);
+		            addToLog(`Config saved at: ${data.filename}`);
+		        } else {
+		            showStatus('Backup error: ' + data.message, 'error');
+		            addToLog(`ERROR - backup failed for ${switchData.hostname}: ${data.message}`);
+		        }
+		    })
+		    .catch(error => {
+		        showStatus('Connection error: ' + error, 'error');
+		        addToLog(`ERROR - Connection failed for ${switchData.hostname}: ${error}`);
+		    });
+		}
+	    })
+	    .catch(error => {
+		showStatus('Error fetching switch data: ' + error, 'error');
+		addToLog(`ERROR - Failed to get switch data: ${error}`);
+	    });
+	}
 
         function backupAllSwitches() {
             addToLog('Starting backup for all devices...');
@@ -1750,8 +2051,8 @@ HTML_TEMPLATE = """
                     updateSwitchTable();
                     updateSchedulesList();
                     closeEditModal();
-                    showStatus('Switch modificato con successo', 'success');
-                    addToLog(`Switch ${hostname} (${ip}) modificato`);
+                    showStatus('Device data updated successfully', 'success');
+                    addToLog(`Device ${hostname} (${ip}) data updated`);
                 } else {
                     showStatus('Error: ' + data.message, 'error');
                 }
@@ -1762,32 +2063,36 @@ HTML_TEMPLATE = """
             document.getElementById('edit-modal').style.display = 'none';
         }
 
-        function showStatus(message, type) {
-            const statusElement = document.getElementById('status-message');
-            statusElement.textContent = message;
-            statusElement.className = 'status ' + type;
-            statusElement.style.display = 'block';
-            
-            setTimeout(() => {
-                statusElement.style.display = 'none';
-            }, 5000);
-        }
+	function showStatus(message, type) {
+	    const statusElement = document.getElementById('status-message');
+	    statusElement.textContent = message;
+	    statusElement.className = 'status ' + type;
+	    statusElement.style.display = 'block';
+	    
+	    // Auto-hide after 5 seconds
+	    setTimeout(() => {
+		statusElement.style.display = 'none';
+	    }, 5000);
+	}
 
-        function addToLog(message) {
-            const logElement = document.getElementById('log');
-            const timestamp = new Date().toLocaleTimeString();
-            logElement.innerHTML += `[${timestamp}] ${message}\n`;
-            logElement.scrollTop = logElement.scrollHeight;
-            
-            fetch('/log_event', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCSRFToken()
-                },
-                body: JSON.stringify({ message: `[${timestamp}] ${message}` }),
-            });
-        }
+	function addToLog(message) {
+	    const logElement = document.getElementById('log');
+	    const timestamp = new Date().toLocaleTimeString();
+	    const messageDiv = document.createElement('div');
+	    messageDiv.textContent = `[${timestamp}] ${message}`;
+	    
+	    // Aggiunge classi in base al tipo di messaggio
+	    if (message.includes('ERROR:')) {
+		messageDiv.style.color = '#ff6b6b';
+	    } else if (message.includes('Starting') || message.includes('Connected') || message.includes('Executing')) {
+		messageDiv.style.color = '#51cf66';
+	    } else if (message.includes('completed')) {
+		messageDiv.style.color = '#339af0';
+	    }
+	    
+	    logElement.insertBefore(messageDiv, logElement.firstChild);
+	    logElement.scrollTop = 0;
+	}
 
         function viewFullLog() {
             fetch('/get_full_log')
@@ -2045,3 +2350,4 @@ HTML_TEMPLATE = """
 
 if __name__ == '__main__':
 	app.run(host='0.0.0.0', port=5000, debug=False)
+	version = "1.0.1"
