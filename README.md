@@ -1,4 +1,4 @@
-![PICKLED logo](https://github.com/AlastorApps/pickled/blob/main/PICKLED_logo.png)
+![PICKLED logo](https://github.com/AlastorApps/pickled/blob/main/PICKLED_logo320.png)
 
 
 # PICKLED - Platform for Instant Config Keep & Lightweight Export Daemon
