@@ -21,6 +21,8 @@ from cryptography.fernet import Fernet
 import base64
 from werkzeug.utils import secure_filename
 
+__version__ = "1.0.1"
+
 app = Flask(__name__)
 app.secret_key = 'chiavesegreta1'  # Chiave segreta per le sessioni
 app.config['WTF_CSRF_ENABLED'] = True
@@ -2350,4 +2352,3 @@ HTML_TEMPLATE = """
 
 if __name__ == '__main__':
 	app.run(host='0.0.0.0', port=5000, debug=False)
-	version = "1.0.1"
