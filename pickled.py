@@ -21,7 +21,7 @@ from cryptography.fernet import Fernet
 import base64
 from werkzeug.utils import secure_filename
 
-__version__ = "1.0.2"
+__version__ = "1.0.3"
 
 app = Flask(__name__)
 app.secret_key = 'chiavesegreta1'  # Chiave segreta per le sessioni
