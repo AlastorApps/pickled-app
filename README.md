@@ -116,39 +116,39 @@ or just execute our __installation.sh__ script.
  Change default credentials
  Set appropriate file permissions
 
-Usage Examples
-Adding a New Device
+## Usage Examples
+### Adding a New Device
 
  Navigate to the "Add Device" section
  Enter device details (hostname, IP address, credentials)
  Save to add the device to the inventory
 
-Creating a Backup Schedule
+### Creating a Backup Schedule
 
  Go to the "Backup Scheduler" section
  Select schedule type (daily, weekly, etc.)
  Configure time and frequency settings
  Save the schedule
 
-Performing a Manual Backup
+### Performing a Manual Backup
 
  Locate the device in the device list
  Click the backup icon
  View the result in the activity log
 
-Maintenance and Troubleshooting
-Log Files
+## Maintenance and Troubleshooting
+### Log Files
 
  Logs are stored in the logs/ directory
  Logs are rotated daily and retained for 12 days
 
-Common Issues
+### Common Issues
 
  Connection Failures: Verify device accessibility and credentials
  Permission Errors: Ensure correct directory permissions for backups
  Scheduling Issues: Check system time and timezone settings
 
-Roadmap (Planned Features)
+### Roadmap (Planned Features)
 
  Configuration comparison tool
  Alerting system for failed backups
