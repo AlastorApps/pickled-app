@@ -21,7 +21,7 @@ from cryptography.fernet import Fernet
 import base64
 from werkzeug.utils import secure_filename
 
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 
 app = Flask(__name__)
 app.secret_key = 'chiavesegreta1'  # Chiave segreta per le sessioni
@@ -1130,11 +1130,15 @@ HTML_TEMPLATE = """
             font-family: monospace;
             white-space: pre-wrap;
         }
-        .switch-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
+	.switch-table {
+	    width: 100%;
+	    border-collapse: separate;  /* Cambiato da collapse a separate */
+	    border-spacing: 0;
+	    margin-top: 20px;
+	    border-radius: 8px;  /* Aggiunto per smussare gli angoli */
+	    overflow: hidden;  /* Per mantenere i bordi arrotondati */
+	    box-shadow: 0 2px 10px rgba(0,0,0,0.1);  /* Aggiunto ombreggiatura per migliorare l'aspetto */
+	}
         .switch-table th, .switch-table td {
             padding: 12px 15px;
             text-align: left;
@@ -1575,44 +1579,48 @@ HTML_TEMPLATE = """
         </div>
     </div>
 
-    <!-- Modal per modificare switch -->
-    <div id="edit-modal" class="modal">
-        <div class="modal-content" style="max-width: 600px;">
-            <div class="modal-header">
-                <div class="modal-title">Modifica Switch</div>
-                <span class="close-btn" onclick="closeEditModal()">&times;</span>
-            </div>
-            <div class="modal-body">
-                <div class="split-view">
-                    <div class="form-column">
-                        <div class="form-group">
-                            <label for="edit-hostname">Hostname:</label>
-                            <input type="text" id="edit-hostname">
-                        </div>
-                        <div class="form-group">
-                            <label for="edit-ip">IP Address:</label>
-                            <input type="text" id="edit-ip">
-                        </div>
-                    </div>
-                    <div class="form-column">
-                        <div class="form-group">
-                            <label for="edit-username">Username:</label>
-                            <input type="text" id="edit-username">
-                        </div>
-                        <div class="form-group">
-                            <label for="edit-password">Password:</label>
-                            <input type="password" id="edit-password">
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div style="text-align: right; margin-top: 20px;">
-                <button onclick="closeEditModal()">Cancel</button>
-                <button class="backup-btn" onclick="saveEditedSwitch()" style="margin-left: 10px;">Save changes</button>
-            </div>
-            <input type="hidden" id="edit-index">
-        </div>
-    </div>
+	<!-- Modal per modificare switch -->
+	<div id="edit-modal" class="modal">
+	    <div class="modal-content" style="max-width: 600px;">
+		<div class="modal-header">
+		    <div class="modal-title">Modify Device</div>
+		    <span class="close-btn" onclick="closeEditModal()">&times;</span>
+		</div>
+		<div class="modal-body">
+		    <div class="split-view">
+		        <div class="form-column">
+		            <div class="form-group">
+		                <label for="edit-hostname">Hostname:</label>
+		                <input type="text" id="edit-hostname">
+		            </div>
+		            <div class="form-group">
+		                <label for="edit-ip">IP Address:</label>
+		                <input type="text" id="edit-ip">
+		            </div>
+		        </div>
+		        <div class="form-column">
+		            <div class="form-group">
+		                <label for="edit-username">Username:</label>
+		                <input type="text" id="edit-username">
+		            </div>
+		            <div class="form-group">
+		                <label for="edit-password">Password:</label>
+		                <input type="password" id="edit-password" placeholder="Leave blank to keep current">
+		            </div>
+		            <div class="form-group">
+		                <label for="edit-enable-password">Enable Password:</label>
+		                <input type="password" id="edit-enable-password" placeholder="Leave blank to keep current">
+		            </div>
+		        </div>
+		    </div>
+		</div>
+		<div style="text-align: right; margin-top: 20px;">
+		    <button onclick="closeEditModal()">Cancel</button>
+		    <button class="backup-btn" onclick="saveEditedSwitch()" style="margin-left: 10px;">Save changes</button>
+		</div>
+		<input type="hidden" id="edit-index">
+	    </div>
+	</div>
 
     <!-- Modal per visualizzare il log completo -->
     <div id="log-modal" class="modal">
@@ -1859,7 +1867,9 @@ HTML_TEMPLATE = """
 	    .then(switchesData => {
 		if (index >= 0 && index < switchesData.length) {
 		    const switchData = switchesData[index];
-		    addToLog(`Starting backup for ${switchData.hostname} (${switchData.ip})...`);
+		    const statusMessage = `Starting backup for ${switchData.hostname} (${switchData.ip})...`;
+		    showStatus(statusMessage, 'success');
+		    addToLog(statusMessage);
 		    
 		    // Poi eseguiamo il backup
 		    fetch('/backup_switch', {
@@ -1873,22 +1883,26 @@ HTML_TEMPLATE = """
 		    .then(response => response.json())
 		    .then(data => {
 		        if (data.success) {
-		            showStatus(`Backup completed for ${data.hostname}`, 'success');
-		            addToLog(`Backup completed for ${data.hostname} (${data.ip})`);
+		            const successMessage = `Backup completed for ${data.hostname}`;
+		            showStatus(successMessage, 'success');
+		            addToLog(successMessage);
 		            addToLog(`Config saved at: ${data.filename}`);
 		        } else {
-		            showStatus('Backup error: ' + data.message, 'error');
+		            const errorMessage = `Backup error for ${switchData.hostname}: ${data.message}`;
+		            showStatus(errorMessage, 'error');
 		            addToLog(`ERROR - backup failed for ${switchData.hostname}: ${data.message}`);
 		        }
 		    })
 		    .catch(error => {
-		        showStatus('Connection error: ' + error, 'error');
+		        const errorMessage = `Connection error for ${switchData.hostname}: ${error}`;
+		        showStatus(errorMessage, 'error');
 		        addToLog(`ERROR - Connection failed for ${switchData.hostname}: ${error}`);
 		    });
 		}
 	    })
 	    .catch(error => {
-		showStatus('Error fetching switch data: ' + error, 'error');
+		const errorMessage = `Error fetching switch data: ${error}`;
+		showStatus(errorMessage, 'error');
 		addToLog(`ERROR - Failed to get switch data: ${error}`);
 	    });
 	}
@@ -1923,6 +1937,41 @@ HTML_TEMPLATE = """
             });
         }
 
+
+	function backupAllSwitches() {
+	    const statusMessage = 'Starting backup for all devices...';
+	    showStatus(statusMessage, 'success');
+	    addToLog(statusMessage);
+	    
+	    fetch('/backup_all_switches', {
+		method: 'POST',
+		headers: {
+		    'Content-Type': 'application/json',
+		    'X-CSRFToken': getCSRFToken()
+		},
+	    })
+	    .then(response => response.json())
+	    .then(data => {
+		if (data.success) {
+		    const successMessage = `Backup completed for ${data.count} devices`;
+		    showStatus(successMessage, 'success');
+		    data.results.forEach(result => {
+		        if (result.success) {
+		            addToLog(`Backup completed for ${result.hostname} (${result.ip})`);
+		        } else {
+		            addToLog(`ERROR during the backup of ${result.hostname}: ${result.message}`);
+		        }
+		    });
+		} else {
+		    const errorMessage = `Backup error: ${data.message}`;
+		    showStatus(errorMessage, 'error');
+		}
+	    })
+	    .catch(error => {
+		const errorMessage = `Connection error: ${error}`;
+		showStatus(errorMessage, 'error');
+	    });
+	}
         function viewBackups(index) {
             fetch('/get_switch_backups', {
                 method: 'POST',
@@ -1962,7 +2011,7 @@ HTML_TEMPLATE = """
                 }
             });
         }
-
+        
         function loadBackupContent(filepath) {
             fetch('/get_backup_content', {
                 method: 'POST',
@@ -1998,72 +2047,78 @@ HTML_TEMPLATE = """
             document.getElementById('backup-modal').style.display = 'none';
         }
 
-        function openEditModal(index) {
-            fetch('/get_switches')
-            .then(response => response.json())
-            .then(switchesData => {
-                if (index >= 0 && index < switchesData.length) {
-                    const switchData = switchesData[index];
-                    
-                    document.getElementById('edit-hostname').value = switchData.hostname;
-                    document.getElementById('edit-ip').value = switchData.ip;
-                    document.getElementById('edit-username').value = switchData.username;
-                    document.getElementById('edit-password').value = '';
-                    document.getElementById('edit-index').value = index;
-                    
-                    document.getElementById('edit-modal').style.display = 'block';
-                }
-            });
-        }
+	function openEditModal(index) {
+	    fetch('/get_switches')
+	    .then(response => response.json())
+	    .then(switchesData => {
+		if (index >= 0 && index < switchesData.length) {
+		    const switchData = switchesData[index];
+		    
+		    document.getElementById('edit-hostname').value = switchData.hostname;
+		    document.getElementById('edit-ip').value = switchData.ip;
+		    document.getElementById('edit-username').value = switchData.username;
+		    document.getElementById('edit-password').value = '';
+		    document.getElementById('edit-enable-password').value = '';
+		    document.getElementById('edit-index').value = index;
+		    
+		    document.getElementById('edit-modal').style.display = 'block';
+		}
+	    });
+	}
 
-        function saveEditedSwitch() {
-            const index = document.getElementById('edit-index').value;
-            const hostname = document.getElementById('edit-hostname').value;
-            const ip = document.getElementById('edit-ip').value;
-            const username = document.getElementById('edit-username').value;
-            const password = document.getElementById('edit-password').value;
+	function saveEditedSwitch() {
+	    const index = document.getElementById('edit-index').value;
+	    const hostname = document.getElementById('edit-hostname').value;
+	    const ip = document.getElementById('edit-ip').value;
+	    const username = document.getElementById('edit-username').value;
+	    const password = document.getElementById('edit-password').value;
+	    const enablePassword = document.getElementById('edit-enable-password').value;
 
-            if (!hostname || !ip || !username) {
-                showStatus('Per favore compila tutti i campi obbligatori', 'error');
-                return;
-            }
+	    if (!hostname || !ip || !username) {
+		showStatus('Please fill all required fields', 'error');
+		return;
+	    }
 
-            const switchData = { 
-                index: parseInt(index),
-                hostname: hostname,
-                ip: ip,
-                username: username
-            };
-            
-            if (password) {
-                switchData.password = password;
-            }
-            
-            fetch('/update_switch', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCSRFToken()
-                },
-                body: JSON.stringify(switchData),
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    updateSwitchTable();
-                    updateSchedulesList();
-                    closeEditModal();
-                    showStatus('Device data updated successfully', 'success');
-                    addToLog(`Device ${hostname} (${ip}) data updated`);
-                } else {
-                    showStatus('Error: ' + data.message, 'error');
-                }
-            });
-        }
+	    const switchData = { 
+		index: parseInt(index),
+		hostname: hostname,
+		ip: ip,
+		username: username
+	    };
+	    
+	    if (password) {
+		switchData.password = password;
+	    }
+	    
+	    if (enablePassword) {
+		switchData.enable_password = enablePassword;
+	    }
+	    
+	    fetch('/update_switch', {
+		method: 'POST',
+		headers: {
+		    'Content-Type': 'application/json',
+		    'X-CSRFToken': getCSRFToken()
+		},
+		body: JSON.stringify(switchData),
+	    })
+	    .then(response => response.json())
+	    .then(data => {
+		if (data.success) {
+		    updateSwitchTable();
+		    updateSchedulesList();
+		    closeEditModal();
+		    showStatus('Device data updated successfully', 'success');
+		    addToLog(`Device ${hostname} (${ip}) data updated`);
+		} else {
+		    showStatus('Error: ' + data.message, 'error');
+		}
+	    });
+	}
 
-        function closeEditModal() {
-            document.getElementById('edit-modal').style.display = 'none';
-        }
+	function closeEditModal() {
+	    document.getElementById('edit-modal').style.display = 'none';
+	}
 
 	function showStatus(message, type) {
 	    const statusElement = document.getElementById('status-message');
@@ -2116,21 +2171,21 @@ HTML_TEMPLATE = """
             document.getElementById('log-modal').style.display = 'none';
         }
 
-        window.onclick = function(event) {
-            const backupModal = document.getElementById('backup-modal');
-            const editModal = document.getElementById('edit-modal');
-            const logModal = document.getElementById('log-modal');
-            
-            if (event.target === backupModal) {
-                backupModal.style.display = 'none';
-            }
-            if (event.target === editModal) {
-                editModal.style.display = 'none';
-            }
-            if (event.target === logModal) {
-                logModal.style.display = 'none';
-            }
-        }
+	window.onclick = function(event) {
+	    const backupModal = document.getElementById('backup-modal');
+	    const editModal = document.getElementById('edit-modal');
+	    const logModal = document.getElementById('log-modal');
+	    
+	    if (event.target === backupModal) {
+		backupModal.style.display = 'none';
+	    }
+	    if (event.target === editModal) {
+		editModal.style.display = 'none';
+	    }
+	    if (event.target === logModal) {
+		logModal.style.display = 'none';
+	    }
+	}
 
         function showScheduleOptions() {
             const type = document.getElementById('schedule-type').value;
@@ -2352,3 +2407,4 @@ HTML_TEMPLATE = """
 
 if __name__ == '__main__':
 	app.run(host='0.0.0.0', port=5000, debug=False)
+	version = "1.0.1"
