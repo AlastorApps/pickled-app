@@ -194,8 +194,8 @@ function install_dependencies {
 	fi
 
 	echo -e "\n${YELLOW}[2/5] Installing Python packages...${NC}"
-	#pip install flask flask-wtf netmiko apscheduler cryptography >/dev/null 2>&1
-	apt-get install -y python3-flask python3-flaskext.wtf python3-netmiko python3-apscheduler python3-cryptography git >/dev/null 2>&1
+	#pip install flask flask-wtf flask-limiter netmiko apscheduler cryptography >/dev/null 2>&1
+	apt-get install -y python3-flask python3-flaskext.wtf python3-flask-limiter python3-netmiko python3-apscheduler python3-cryptography git >/dev/null 2>&1
 }
 
 function setup_application {
