@@ -67,7 +67,7 @@ On-Demand Backups: Initiate immediate backups of device configurations.
 
  Backend: Python (Flask framework)
  Frontend: HTML5, CSS3, JavaScript
- SSH Connectivity: Paramiko library
+ SSH Connectivity: Netmiko library
  Scheduling: APScheduler
  Encryption: cryptography (Fernet)
 
@@ -78,7 +78,7 @@ On-Demand Backups: Initiate immediate backups of device configurations.
  Required Python Packages:
 
 ```
-flask flask-wtf paramiko apscheduler cryptography
+flask flask-wtf netmiko apscheduler cryptography
 ```
 
 
@@ -95,7 +95,7 @@ flask flask-wtf paramiko apscheduler cryptography
 
  Install dependencies:
 ```
-pip install flask flask-wtf paramiko apscheduler cryptography
+pip install flask flask-wtf netmiko apscheduler cryptography
 ```
 Run the application:
 ```
