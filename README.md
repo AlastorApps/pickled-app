@@ -90,7 +90,7 @@ flask flask-wtf netmiko apscheduler cryptography
  Configuration files stored with proper file permissions
  Dedicated system user for service operation
 
-## Installation and Setup
+##  and Setup
 ### Quick Start
 
  Install dependencies:
@@ -101,7 +101,7 @@ Run the application:
 ```
 python3 pickled.py
 ```
-or just execute our __installation.sh__ script.
+or just execute our __install.sh__ script.
 
  Access the web interface:
  http://localhost:5000
