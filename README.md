@@ -90,13 +90,20 @@ flask flask-wtf netmiko apscheduler cryptography
  Configuration files stored with proper file permissions
  Dedicated system user for service operation
 
-##  and Setup
+##  Installation and Setup
 ### Quick Start
+
+On Ubuntu
 
  Install dependencies:
 ```
-pip install flask flask-wtf netmiko apscheduler cryptography
+pip install flask flask-wtf flask-limiter netmiko apscheduler cryptography
 ```
+On Debian
+```
+apt install python3-flask python3-flaskext.wtf python3-flask-limiter python3-netmiko python3-apscheduler python3-cryptography
+```
+
 Run the application:
 ```
 python3 pickled.py
