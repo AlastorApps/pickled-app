@@ -94,6 +94,7 @@ flask flask-wtf netmiko apscheduler cryptography
 ### Quick Start
 
  Install dependencies:
+ 
  On Ubuntu
 ```
 pip install flask flask-wtf flask-limiter netmiko apscheduler cryptography
