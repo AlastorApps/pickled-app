@@ -158,9 +158,11 @@ or just execute our __install.sh__ script.
 ### Roadmap (Planned Features)
 
  Configuration comparison tool
+ 
  Alerting system for failed backups
+ 
  REST API for integration with external tools
+ 
  Multi-user support with role-based access control
-
 
 Fast and lighweight single-file web application for Cisco network devices configuration backup - works with ssh
