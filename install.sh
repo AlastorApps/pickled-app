@@ -42,7 +42,7 @@ set -euo pipefail
 # System integrity checks - check if needed commands are available #
 ####################################################################
 missing=()
-for cmd in apt-get systemctl find git wget python3; do
+for cmd in apt-get systemctl find wget python3; do
     command -v "$cmd" >/dev/null 2>&1 || missing+=("$cmd")
 done
 if [ ${#missing[@]} -ne 0 ]; then
@@ -227,7 +227,11 @@ function update_application {
 	elif [ "$1" == "git" ]; then
 		echo "Updating via Git repository..."
 		if [ -d ".git" ]; then
-			git pull --rebase --autostash
+			# Testing feature: this is to merge local changes with git repo
+			#git pull --rebase --autostash
+			# This is for production: just pull the latest files from git repo
+			git fetch origin
+			git reset --hard origin/main
 		else
 			echo "No existing Git repository found, cloning fresh copy..."
 			find . -mindepth 1 \
