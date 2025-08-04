@@ -8,8 +8,8 @@
 APP_NAME="pickled"
 INSTALL_DIR="/opt/${APP_NAME}"
 SERVICE_FILE="/etc/systemd/system/${APP_NAME}.service"
-GITHUB_REPO="https://github.com/AlastorApps/pickled.git"
-GITHUB_RAW="https://raw.githubusercontent.com/AlastorApps/pickled/refs/heads/main/pickled.py"
+GITHUB_REPO="https://github.com/AlastorApps/pickled-app.git"
+GITHUB_RAW="https://raw.githubusercontent.com/AlastorApps/pickled-app/refs/heads/main/pickled.py"
 
 # Colors for ASCII Art
 LIGHTGREEN=$'\033[38;5;120m'
@@ -227,10 +227,9 @@ function update_application {
 	elif [ "$1" == "git" ]; then
 		echo "Updating via Git repository..."
 		if [ -d ".git" ]; then
-			# Testing feature: this is to merge local changes with git repo
-			#git pull --rebase --autostash
-			# This is for production: just pull the latest files from git repo
-			git fetch origin
+			# Cambio approccio disabilito pull e copio l'intero repo
+			# git pull --rebase --autostash
+			git fetch
 			git reset --hard origin/main
 		else
 			echo "No existing Git repository found, cloning fresh copy..."
