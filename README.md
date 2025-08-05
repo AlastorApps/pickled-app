@@ -44,7 +44,6 @@ Forget heavy platforms and costly infrastructure: **PICKLED runs flawlessly even
 - **Visual Feedback on Upcoming Tasks**.
 
 ### Security & Access Control
-- **Role-Based Access** with secure login.
 - **CSRF Protection** on all forms.
 - **AES-256 Encryption** for sensitive data in transit and at rest.
 - **Detailed Activity Logging** for full traceability.
