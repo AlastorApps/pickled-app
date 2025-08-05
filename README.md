@@ -1,168 +1,169 @@
 ![PICKLED logo](https://raw.githubusercontent.com/AlastorApps/pickled/refs/heads/main/static/PICKLED_logo320.png)
 
 
-# PICKLED - Platform for Instant Config Keep & Lightweight Export Daemon
-## Network Configuration Backup Manager developed by Luca Armiraglio & Mattia Mattavelli
 
-__Because broken routers don’t explain themselves__
+# PICKLED
+### Platform for Instant Config Keep & Lightweight Export Daemon
+**Network Configuration Backup Manager**  
+Developed by **Luca Armiraglio** & **Mattia Mattavelli**
+
+---
+
+> _Because broken routers don’t explain themselves._
+
+---
 
 ## Overview
+**PICKLED** is a **lightweight and ultra-efficient web application** designed for network administrators to automate and manage **network device configuration backups** (switches, routers, etc.) over SSH.
 
-Pickled is a comprehensive web application designed for network administrators to manage and automate backups of network device configurations (e.g., switches, routers) via SSH. It offers a secure, centralized platform for configuration management with advanced scheduling and version control features.
+Forget heavy platforms and costly infrastructure: **PICKLED runs flawlessly even on a Raspberry Pi Zero**, requiring **minimal system resources** while delivering enterprise-grade features such as **secure credential management**, **flexible scheduling**, and **configuration versioning**.
 
+---
 
 ## Key Features
-### 1. Device Management
+### Device Management
+- **Centralized Device Inventory** with connection details.
+- **Secure Credential Storage** using AES-256 encryption.
+- **Bulk Import/Export via CSV**.
+- Easy device addition, editing, and removal.
 
- Centralized Inventory: Maintain a complete inventory of network devices, including all connection details.
- Secure Credential Storage: All credentials are encrypted using AES-256 encryption before being stored.
- Bulk Operations: Add multiple devices simultaneously via CSV import/export.
- Device Configuration: Easily update or remove devices from the system.
+### Configuration Backup
+- **Instant Backups** with a single click.
+- **Advanced Scheduling**: Daily, weekly, monthly, custom intervals.
+- **Global Backup Execution** for all devices.
+- **Version Control** with historical config snapshots.
 
-### 2. Configuration Backup
+### Backup Management
+- **Visual Config Viewer & Diff Comparison**.
+- **Secure Storage with Access Controls**.
+- **Quick Export of Config Files** for offline use.
 
-On-Demand Backups: Initiate immediate backups of device configurations.
+### Scheduling System
+- **Flexible Backup Schedules** with per-device customization.
+- **Enable/Disable Schedules Dynamically**.
+- **Global Scheduling for All Devices**.
+- **Visual Feedback on Upcoming Tasks**.
 
- Scheduled Backups: Automate backups with flexible scheduling options:
- Daily, weekly, monthly, or yearly intervals
- Custom time settings for each schedule
- Global Backup: Execute backups for all devices with a single command.
- Configuration Versioning: Maintain historical versions of device configurations.
+### Security & Access Control
+- **Role-Based Access** with secure login.
+- **CSRF Protection** on all forms.
+- **AES-256 Encryption** for sensitive data in transit and at rest.
+- **Detailed Activity Logging** for full traceability.
 
+### Monitoring & Reporting
+- **Live Logs & Historical Archives**.
+- **Immediate Backup Feedback**.
+- **Comprehensive Error Reporting**.
 
-### 3. Backup Management
-
- Configuration Viewer: View and compare different versions of device configurations.
- Secure Storage: Backups are securely stored with proper access controls.
- Quick Access: Easily locate and retrieve specific configuration versions.
- Export Capabilities: Download configuration files for offline analysis or archiving.
-
-
-### 4. Scheduling System
-
- Flexible Scheduling: Create multiple backup schedules with different frequencies.
- Schedule Management: Enable or disable schedules without deleting them.
- Visual Feedback: View upcoming scheduled operations through the web interface.
- Global Scheduling: Apply schedules to all devices at once.
-
-
-### 5. Security Features
-
- Role-Based Access: Secure web interface with login protection.
- CSRF Protection: All forms are protected against Cross-Site Request Forgery.
- Encrypted Storage: Sensitive data is encrypted both in transit and at rest.
- Activity Logging: All operations are comprehensively logged.
-
-
-### 6. Monitoring and Reporting
-
- Real-Time Logs: View system activities as they happen.
- Historical Logs: Access archived logs for troubleshooting.
- Backup Status: Receive immediate feedback on backup operations.
- Error Reporting: Detailed error messages for failed operations.
-
+---
 
 ## Technical Specifications
-### Core Technologies
+- **Backend**: Python (Flask)
+- **Frontend**: HTML5, CSS3, JavaScript
+- **SSH Connectivity**: Netmiko
+- **Task Scheduling**: APScheduler
+- **Encryption**: Python Cryptography (Fernet AES-256)
 
- Backend: Python (Flask framework)
- Frontend: HTML5, CSS3, JavaScript
- SSH Connectivity: Netmiko library
- Scheduling: APScheduler
- Encryption: cryptography (Fernet)
+### System Requirements:
+- Python 3.6+
+- Required Packages:
+  ```bash
+  flask flask-wtf netmiko apscheduler cryptography
+  ```
 
+---
 
-### System Requirements
+## Why PICKLED?
+- **Ultra-Lightweight Deployment**: Runs perfectly on **Raspberry Pi Zero** or similar low-power devices.
+- **No Heavy Databases** or complex dependencies.
+- **Single-File Daemon**: Fast, portable, and easy to maintain.
+- **Zero Infrastructure Investment**: Deploy in minutes without expensive hardware.
+- **Blazing Fast & Minimal Footprint** for hundreds of devices.
 
- Python: __Version 3.6+__
- Required Python Packages:
+---
 
-```
-flask flask-wtf netmiko apscheduler cryptography
-```
-
-
-### Security Implementation
-
- AES-256 encryption for stored credentials
- CSRF protection on all forms
- Secure session management
- Configuration files stored with proper file permissions
- Dedicated system user for service operation
-
-##  Installation and Setup
-### Quick Start
-
- Install dependencies:
- 
- On Ubuntu
-```
-pip install flask flask-wtf flask-limiter netmiko apscheduler cryptography
-```
-On Debian
-```
-apt install python3-flask python3-flaskext.wtf python3-flask-limiter python3-netmiko python3-apscheduler python3-cryptography
+## Installation & Quick Start
+### Recommended Method:
+```bash
+wget https://github.com/AlastorApps/pickled-app/raw/main/install.sh
+chmod +x install.sh
+./install.sh
 ```
 
-Run the application:
+### Manual Installation:
+```bash
+git clone https://github.com/AlastorApps/pickled-app.git
+cd pickled
+pip install -r requirements.txt
+python pickled.py
 ```
-python3 pickled.py
-```
-or just execute our __install.sh__ script.
 
- Access the web interface:
- http://localhost:5000
- Default credentials:
- Username: jar
- Password: cucumber
+### Access the Web Interface:
+- URL: [http://localhost:5000](http://localhost:5000)
+- Default Credentials:  
+  **Username**: `jar`  
+  **Password**: `cucumber`
 
-### Production Deployment Recommendations
+---
 
- Set up as a systemd service
- Enable SSL/TLS encryption
- Change default credentials
- Set appropriate file permissions
+## Production Deployment Recommendations
+- Run as a **systemd service**.
+- Enable **SSL/TLS Encryption**.
+- Change default credentials.
+- Secure file system permissions for backups.
+
+---
 
 ## Usage Examples
-### Adding a New Device
+### Add a New Device
+1. Go to **"Add Device"**.
+2. Fill in hostname, IP, and credentials.
+3. Save.
 
- Navigate to the "Add Device" section
- Enter device details (hostname, IP address, credentials)
- Save to add the device to the inventory
+### Create a Backup Schedule
+1. Navigate to **"Backup Scheduler"**.
+2. Select schedule type (daily, weekly, etc.).
+3. Define frequency and save.
 
-### Creating a Backup Schedule
+### Perform a Manual Backup
+1. Locate device in the list.
+2. Click the **Backup** icon.
+3. Check results in the **Activity Log**.
 
- Go to the "Backup Scheduler" section
- Select schedule type (daily, weekly, etc.)
- Configure time and frequency settings
- Save the schedule
+---
 
-### Performing a Manual Backup
+## Logs & Troubleshooting
+- Logs stored in `/logs/`
+- Log rotation: Daily, kept for 12 days.
+- Common Issues:
+  - **SSH Connection Failures**: Check device reachability & credentials.
+  - **Permission Errors**: Ensure correct directory access rights.
+  - **Scheduling Problems**: Verify system time & timezone.
 
- Locate the device in the device list
- Click the backup icon
- View the result in the activity log
+---
 
-## Maintenance and Troubleshooting
-### Log Files
+## Roadmap
+- **Config Comparison Tool** with visual diffs.
+- **Alert System** for failed backups.
+- **REST API** for external integrations.
+- **Multi-User Support** with role-based permissions.
+- **Advanced Export Automation**.
 
- Logs are stored in the logs/ directory
- Logs are rotated daily and retained for 12 days
+---
 
-### Common Issues
+## License
+GPLv3 — Free Software Forever.
 
- Connection Failures: Verify device accessibility and credentials
- Permission Errors: Ensure correct directory permissions for backups
- Scheduling Issues: Check system time and timezone settings
+---
 
-### Roadmap (Planned Features)
+## Live Demo Site
+A demo site showcasing PICKLED’s interface can be previewed [here](#).
 
- Configuration comparison tool
- 
- Alerting system for failed backups
- 
- REST API for integration with external tools
- 
- Multi-user support with role-based access control
+---
 
-Fast and lighweight single-file web application for Cisco network devices configuration backup - works with ssh
+### Built for speed. Runs anywhere.
+
+---
+
+### TL;DR:
+> **PICKLED** is a **fast, no-nonsense backup daemon for network devices**, runs even on a **Raspberry Pi Zero**, with **zero infrastructure costs**, and **all the essentials packed into a single file**.
