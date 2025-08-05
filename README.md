@@ -7,12 +7,10 @@
 **Network Configuration Backup Manager**  
 Developed by **Luca Armiraglio** & **Mattia Mattavelli**
 
----
 
 >_"Because broken routers don’t explain themselves."_
 >— Anonymous Network Engineer
 
----
 
 ## Overview
 **PICKLED** is a **lightweight and ultra-efficient web application** designed for network administrators to automate and manage **network device configuration backups** (switches, routers, etc.) over SSH.
