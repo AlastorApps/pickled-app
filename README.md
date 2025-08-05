@@ -9,7 +9,7 @@ Developed by **Luca Armiraglio** & **Mattia Mattavelli**
 
 ---
 
->__"Because broken routers don’t explain themselves."__
+>_"Because broken routers don’t explain themselves."_
 >— Anonymous Network Engineer
 
 ---
