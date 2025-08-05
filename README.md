@@ -156,11 +156,6 @@ GPLv3 — Free Software Forever.
 
 ---
 
-## Live Demo Site
-A demo site showcasing PICKLED’s interface can be previewed [here](#).
-
----
-
 ### Built for speed. Runs anywhere.
 
 ---
