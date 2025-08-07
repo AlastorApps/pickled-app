@@ -1244,7 +1244,7 @@
         </div>
 
         <!-- Modal con l'elenco dei backup -->
-        <div id="backup-modal" class="modal" style="z-index:1000">
+        <div id="backup-list-modal" class="modal" style="z-index:1000">
             <div class="modal-content" style="width: 90%; max-width: 1400px; height: 85vh;">
                 <div class="modal-header">
                     <div class="modal-title">
@@ -1276,18 +1276,6 @@
                             
                             <div id="backup-button-bar" style="display: flex; justify-content: flex-end; gap: 8px; padding: 8px 0; margin-bottom: 12px;">
                                 <!-- to be filled by the script -->
-
-                                <!--
-                                <button class="action-btn compare-btn" id="compare-select-btn" onclick="openCompareSelectModal()" style="padding: 5px 12px; font-size: 13px;">
-                                    <i class="fa-solid fa-code-compare"></i> Compare
-                                </button>
-                                <button class="action-btn backup-btn" id="export-backup-btn" style="padding: 5px 12px; font-size: 13px;">
-                                    <i class="fas fa-download"></i> Export
-                                </button>
-                                <button class="action-btn delete-btn" id="delete-backup-btn" style="padding: 5px 12px; font-size: 13px;">
-                                    <i class="fas fa-trash"></i> Delete
-                                </button>
-                                -->
                             </div>
 
                             <!-- Contenuto configurazione -->
@@ -1308,32 +1296,26 @@
             <div class="modal-content" style="width: 90%; max-width: 1400px; height: 85vh;">
                 <div class="modal-header">
                     <div class="modal-title">
-                        Select backup of <span id="modal-switch-name"></span> to compare:
+                        Select backup of <span id="compare-switch-name"></span> to compare:
                     </div>
+                    <!--
+                    <div id="compare-button-bar" style="display: none; flex-direction: column; height: 100%;">
+                        <div style="display: flex; justify-content: flex-end; gap: 8px; padding: 8px 0; margin-bottom: 12px;">
+                            <button class="action-btn compare-confirm-btn" id="compare-confirm-btn" onclick="TO_BE_CHANGED()" style="padding: 5px 12px; font-size: 13px;">
+                                <i class="fa-solid fa-code-compare"></i> Compare!
+                            </button>
+                        </div>
+                    </div>
+                    -->
+                    <button class="action-btn compare-confirm-btn" id="compare-confirm-btn" onclick="TO_BE_CHANGED()" style="padding: 5px 12px; font-size: 13px;">
+                        <i class="fa-solid fa-code-compare"></i> Compare!
+                    </button>
                     <span class="close-btn" onclick="closeCompareSelectModal()">&times;</span>
                 </div>
 
                 <div class="modal-body" style="height: calc(100% - 60px);">
-                    <!-- Lista backup più stretta (25%) -->
-                    <div class="backup-list" id="backup-list" style="width: 25%; min-width: 220px; border-right: 1px solid #eee; padding-right: 15px;">
+                    <div class="backup-list" id="compare-backup-list" style="min-width: 220px; border-right: 1px solid #eee; padding-right: 15px;">
                     <!-- Lista dei backup -->
-                    </div>
-
-                    <!-- Contenuto principale più ampio (75%) -->
-                    <div class="backup-content" style="width: 75%;">
-                        <div id="backup-content-placeholder">
-                            <i class="fas fa-arrow-left" style="font-size: 24px; color: #ccc; margin-bottom: 10px;"></i>
-                            <p>Select a backup from the list to view content</p>
-                        </div>
-
-                        <div id="backup-content" style="display: none; flex-direction: column; height: 100%;">
-                            <!-- Barra dei bottoni compatta -->
-                            <div style="display: flex; justify-content: flex-end; gap: 8px; padding: 8px 0; margin-bottom: 12px;">
-                                <button class="action-btn compare-confirm-btn" id="compare-confirm-btn" onclick="TO_BE_CHANGED()" style="padding: 5px 12px; font-size: 13px;">
-                                    <i class="fa-solid fa-code-compare"></i> Compare!
-                                </button>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -1501,7 +1483,7 @@
     <button class="action-btn edit-btn" title="Modifica" onclick="openEditModal(${sw.originalIndex})">
         <i class="fas fa-edit"></i>
     </button>
-    <button class="action-btn view-btn" title="Visualizza Backup" onclick="openConfigModal(${sw.originalIndex})">
+    <button class="action-btn view-btn" title="Visualizza Backup" onclick="openBackupListModal(${sw.originalIndex})">
         <i class="fas fa-eye"></i>
     </button>
     <button class="action-btn delete-btn" title="Elimina" onclick="deleteSwitch(${sw.originalIndex})">
@@ -1945,8 +1927,7 @@
                 });
             }
 
-            function openCompareSelectModal(index) {
-                alert("è una vera BOMBA!!")
+            /*function openBackupListModal(index) {
                 fetch('/get_switch_backups', {
                     method: 'POST',
                     headers: {
@@ -1958,62 +1939,7 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        const modal = document.getElementById('compare-select-modal');
-                        const switchName = document.getElementById('modal-switch-name');
-                        const backupList = document.getElementById('backup-list');
-                        const compareConfirmBtn = document.getElementById('compare-confirm-btn');
-
-                        switchName.textContent = data.hostname;
-                        backupList.innerHTML = '';
-
-                        // Imposta l'indice dello switch sul pulsante Export All
-                        compareConfirmBtn.setAttribute('data-switch-index', index);
-
-                        if (data.backups.length === 0) {
-                            backupList.innerHTML = '<p>No available backups</p>';
-                            compareConfirmBtn.disabled = true;
-                            compareConfirmBtn.title = 'No backups available';
-                            compareConfirmBtn.style.opacity = '0.5';
-                            compareConfirmBtn.style.cursor = 'not-allowed';
-                        } else {
-                            data.backups.forEach(backup => {
-                                const backupItem = document.createElement('div');
-                                backupItem.className = 'backup-item';
-                                backupItem.textContent = backup.filename;
-                                backupItem.setAttribute('data-path', backup.path); // Aggiungi questa linea
-                                backupList.appendChild(backupItem);
-                            });
-
-                            compareConfirmBtn.disabled = false;
-                            compareConfirmBtn.title = 'Compare the configuration';
-                            compareConfirmBtn.style.opacity = '1';
-                            compareConfirmBtn.style.cursor = 'pointer';
-                        }
-
-                        document.getElementById('backup-content').style.display = 'none';
-                        document.getElementById('backup-content-placeholder').style.display = 'block';
-                        modal.style.display = 'block';
-                    } else {
-                        showStatus('Error: ' + data.message, 'error');
-                    }
-                });
-
-                document.addEventListener('keydown', handleEscCompareSelectModal);
-            }
-
-            /*function openConfigModal(index) {
-                fetch('/get_switch_backups', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': getCSRFToken()
-                    },
-                    body: JSON.stringify({ index }),
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        const modal = document.getElementById('backup-modal');
+                        const modal = document.getElementById('backup-list-modal');
                         const switchName = document.getElementById('modal-switch-name');
                         const backupList = document.getElementById('backup-list');
 
@@ -2044,7 +1970,7 @@
             }*/
 
             /*
-            function openConfigModal(index) {
+            function openBackupListModal(index) {
             fetch('/get_switch_backups', {
                 method: 'POST',
                 headers: {
@@ -2056,7 +1982,7 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    const modal = document.getElementById('backup-modal');
+                    const modal = document.getElementById('backup-list-modal');
                     const switchName = document.getElementById('modal-switch-name');
                     const backupList = document.getElementById('backup-list');
                     const exportAllBtn = document.getElementById('export-all-backup-btn');
@@ -2098,7 +2024,7 @@
             }
             */
             
-            function openConfigModal(index) {
+            function openBackupListModal(index) {
                 fetch('/get_switch_backups', {
                     method: 'POST',
                     headers: {
@@ -2110,7 +2036,7 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        const modal = document.getElementById('backup-modal');
+                        const modal = document.getElementById('backup-list-modal');
                         const switchName = document.getElementById('modal-switch-name');
                         const backupList = document.getElementById('backup-list');
                         const exportAllBtn = document.getElementById('export-all-backup-btn');
@@ -2119,18 +2045,18 @@
                         switchName.textContent = data.hostname;
                         backupList.innerHTML = '';
 
+                        // Riempio barra pulsanti con i bottoni, e valorizzo l'index del compare-select-btn
                         backupButtonBar.innerHTML = `
-<button class="action-btn compare-btn" id="compare-select-btn" onclick="openCompareSelectModal(${index})" style="padding: 5px 12px; font-size: 13px;">
+<button class="action-btn compare-select-btn" id="compare-select-btn" onclick="openCompareSelectModal(${index})" style="padding: 5px 12px; font-size: 13px;">
     <i class="fa-solid fa-code-compare"></i> Compare
 </button>
-<button class="action-btn backup-btn" id="export-backup-btn" style="padding: 5px 12px; font-size: 13px;">
+<button class="action-btn backup-btn" id="export-backup-btn" onclick="exportBackup()" style="padding: 5px 12px; font-size: 13px;">
     <i class="fas fa-download"></i> Export
 </button>
-<button class="action-btn delete-btn" id="delete-backup-btn" style="padding: 5px 12px; font-size: 13px;">
+<button class="action-btn delete-btn" id="delete-backup-btn" onclick="deleteBackup()" style="padding: 5px 12px; font-size: 13px;">
     <i class="fas fa-trash"></i> Delete
 </button>
 `
-
                         // Imposta l'indice dello switch sul pulsante Export All
                         exportAllBtn.setAttribute('data-switch-index', index);
 
@@ -2165,6 +2091,52 @@
                 });
 
                 document.addEventListener('keydown', handleEscConfigModal);
+            }
+
+            function openCompareSelectModal(index) {
+                alert("è una vera BOMBA!!")
+                fetch('/get_switch_backups', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCSRFToken()
+                    },
+                    body: JSON.stringify({ index }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const modal = document.getElementById('compare-select-modal');
+                        const switchName = document.getElementById('compare-switch-name');
+                        const compareBackupList = document.getElementById('compare-backup-list');
+                        const compareConfirmBtn = document.getElementById('compare-confirm-btn');
+
+                        switchName.textContent = data.hostname;
+                        compareBackupList.innerHTML = '';
+
+                        // Imposta l'indice dello switch sul pulsante Export All
+                        compareConfirmBtn.setAttribute('data-switch-index', index);
+
+                        data.backups.forEach(backup => {
+                            const compareBackupItem = document.createElement('div');
+                            compareBackupItem.className = 'backup-item';
+                            compareBackupItem.textContent = backup.filename;
+                            compareBackupItem.setAttribute('data-path', backup.path); // Aggiungi questa linea
+                            compareBackupList.appendChild(compareBackupItem);
+                        });
+
+                        compareConfirmBtn.disabled = false;
+                        compareConfirmBtn.title = 'Compare the configuration';
+                        compareConfirmBtn.style.opacity = '1';
+                        compareConfirmBtn.style.cursor = 'pointer';
+                        
+                        modal.style.display = 'block';
+                    } else {
+                        showStatus('Error: ' + data.message, 'error');
+                    }
+                });
+
+                document.addEventListener('keydown', handleEscCompareSelectModal);
             }
            
             function loadBackupContent(filepath, switchIndex) {
@@ -2203,71 +2175,6 @@
                     }
                 });
             }
-            
-            /*
-            function exportAllBackup() {
-                const switchIndex = document.getElementById('export-all-backup-btn').getAttribute('data-switch-index');
-                if (!switchIndex) {
-                    showStatus('No device selected for export', 'error');
-                    return;
-                }
-
-                // Disabilita il pulsante durante l'export
-                const exportBtn = document.getElementById('export-all-backup-btn');
-                exportBtn.disabled = true;
-                exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Exporting...';
-
-                showStatus('Preparing all backups for export...', 'success');
-
-                fetch('/export_all_backups', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': getCSRFToken()
-                    },
-                    body: JSON.stringify({ index: switchIndex }),
-                })
-                .then(response => {
-                if (!response.ok) {
-                    // Se la risposta non è OK, verifica se è perché non ci sono backup
-                    if (response.status === 404) {
-                        throw new Error('No backups found for this device');
-                    }
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.blob();
-                })
-                .then(blob => {
-                    if (blob.size === 0) {
-                        throw new Error('Received empty ZIP file');
-                    }
-
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-
-                    const hostname = document.getElementById('modal-switch-name').textContent.trim();
-                    a.download = `${hostname}_all_backups_${new Date().toISOString().slice(0, 10)}.zip`;
-
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    window.URL.revokeObjectURL(url);
-
-                    showStatus(`All backups for ${hostname} exported successfully as ZIP`, 'success');
-                    addToLog(`Exported all backups for ${hostname} as ZIP file`);
-                })
-                .catch(error => {
-                    showStatus('Export failed: ' + error.message, 'error');
-                    addToLog(`ERROR exporting backups: ${error.message}`);
-                })
-                .finally(() => {
-                    // Riabilita il pulsante
-                    exportBtn.disabled = false;
-                    exportBtn.innerHTML = '<i class="fa-solid fa-code-compare"></i> Export All';
-                });
-            }
-            */
 
             function exportAllBackup() {
                 const backupItems = document.querySelectorAll('.backup-item');
@@ -2318,6 +2225,7 @@
             }
 
             function exportBackup() {
+                alert ('ciao');
                 const configContent = document.querySelector('#backup-content .config-content').textContent;
                 const filename = document.querySelector('.backup-item.active').textContent;
 
@@ -2366,7 +2274,7 @@
                         const currentSwitchIndex = document.getElementById('delete-backup-btn').getAttribute('data-switch-index');
 
                         if (currentSwitchIndex) {
-                            openConfigModal(currentSwitchIndex);
+                            openBackupListModal(currentSwitchIndex);
                         }
                     } else {
                         showStatus('Error: ' + data.message, 'error');
@@ -2395,7 +2303,7 @@
             }
 
             function closeConfigModal() {
-                document.getElementById('backup-modal').style.display = 'none';
+                document.getElementById('backup-list-modal').style.display = 'none';
                 document.getElementById('compare-select-btn').style.display = 'none';
                 document.getElementById('export-backup-btn').style.display = 'none';
                 document.getElementById('delete-backup-btn').style.display = 'none';
@@ -2405,7 +2313,7 @@
 
             function closeCompareSelectModal() {
                 document.getElementById('compare-select-modal').style.display = 'none';
-                document.removeEventListener('keydown', handleEscConfigModal);
+                document.removeEventListener('keydown', handleEscCompareSelectModal);
             }
 
             function openEditModal(index) {
@@ -2564,7 +2472,7 @@
             }
 
             window.onclick = function(event) {
-                const backupModal = document.getElementById('backup-modal');
+                const backupModal = document.getElementById('backup-list-modal');
                 const editModal = document.getElementById('edit-modal');
                 const logModal = document.getElementById('log-modal');
                 const compareselectModal = document.getElementById('compare-select-modal');
@@ -2848,10 +2756,6 @@ onclick="toggleSchedule('${schedule.id}', ${!schedule.enabled})">
                 const today = new Date().toISOString().split('T')[0];
                 document.getElementById('schedule-date').min = today;
                 document.getElementById('schedule-date').value = today;
-
-                // Event listener per funzioni varie
-                document.getElementById('export-backup-btn').addEventListener('click', exportBackup);
-                document.getElementById('delete-backup-btn').addEventListener('click', deleteBackup);
             });
 
             window.addEventListener('DOMContentLoaded', function() {
