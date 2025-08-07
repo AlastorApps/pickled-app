@@ -325,35 +325,34 @@
                 <div class="modal-header">
                     <div class="modal-title">
                         Configuration comparison of <span id="comparison-switch-name"></span>
-                        <br/><span id="compare-title"></span>
                     </div>
-                    <span class="close-btn" onclick="closeComparisonModal()">&times;</span>
+                    <span class="close-btn" onclick="closeCompareModal()">&times;</span>
                 </div>
-            </div>
-            <div class="modal-body" style="height: calc(100% - 60px);">
-                <div class="compare-container">
-                    <!-- Pannello sinistro - Configurazione originale -->
-                    <div class="compare-panel">
-                        <div class="compare-header">
-                            <h3 id="left-panel-title">Original</h3>
-                            <div class="compare-info" id="left-file-info"></div>
+                <div class="modal-body" style="height: calc(100% - 60px);">
+                    <div class="compare-container">
+                        <!-- Pannello sinistro - Configurazione originale -->
+                        <div class="compare-panel">
+                            <div class="compare-header">
+                                Original
+                                <div class="compare-info" id="left-file-info"></div>
+                            </div>
+                            <div class="compare-content" id="left-config-content"></div>
                         </div>
-                        <div class="compare-content" id="left-config-content"></div>
-                    </div>
 
-                    <!-- Pannello centrale - Differenze -->
-                    <div class="compare-diff">
-                        <div class="diff-header">Differences</div>
-                        <div class="diff-content" id="diff-content"></div>
-                    </div>
-
-                    <!-- Pannello destro - Configurazione da confrontare -->
-                    <div class="compare-panel">
-                        <div class="compare-header">
-                            <h3 id="right-panel-title">Modified</h3>
-                            <div class="compare-info" id="right-file-info"></div>
+                        <!-- Pannello centrale - Differenze -->
+                        <div class="compare-diff">
+                            <div class="diff-header">Diff</div>
+                            <div class="diff-content" id="diff-content"></div>
                         </div>
-                        <div class="compare-content" id="right-config-content"></div>
+
+                        <!-- Pannello destro - Configurazione da confrontare -->
+                        <div class="compare-panel">
+                            <div class="compare-header">
+                                Modified
+                                <div class="compare-info" id="right-file-info"></div>
+                            </div>
+                            <div class="compare-content" id="right-config-content"></div>
+                        </div>
                     </div>
                 </div>
             </div>

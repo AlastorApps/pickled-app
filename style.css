@@ -1083,8 +1083,9 @@ footer {
 
 
 
-
-
+/* ============================================================================================ */
+/*                       INIZIO STILI TABELLA COMPARE                                           */
+/* ============================================================================================ */
 
 /* Stili per il confronto delle configurazioni */
 .compare-container {
@@ -1098,9 +1099,10 @@ footer {
     flex: 1;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    /*overflow: hidden;*/
     border: 1px solid var(--gray-medium);
     border-radius: 4px;
+    width: 50%;
 }
 
 .compare-header {
@@ -1116,17 +1118,20 @@ footer {
 .compare-info {
     font-size: 12px;
     opacity: 0.8;
+    color: lightgray;
+    background-color: var(--petrol);
 }
 
 .compare-content {
-    flex: 1;
+    /*flex: 1;*/
     overflow-y: auto;
+    overflow-x: fixed;
+    font: Consolas;
+    font: Liberation Mono;
     font-family: monospace;
-    font-size: 13px;
-    line-height: 1.5;
-    background-color: #f8f8f8;
-    padding: 10px;
-    white-space: pre;
+    font-size: 12px;
+    line-height: 1;
+    background-color: #ffffff;
     position: relative;
 }
 
@@ -1148,29 +1153,32 @@ footer {
 }
 
 .diff-content {
-    flex: 1;
+    /*flex: 1;*/
     overflow-y: auto;
     font-family: monospace;
-    font-size: 13px;
+    font-size: 12px;
     text-align: center;
+    line-height: 1;
     background-color: var(--gray-light);
-    padding: 10px 5px;
+    /*padding: 10px 5px;*/
 }
 
 .line-number {
     display: inline-block;
     width: 30px;
-    color: #777;
+    /*color: #777;*/
+    color: lightgray;
+    background-color: var(--petrol);
     text-align: right;
     margin-right: 10px;
     user-select: none;
 }
 
-.config-line {
+/*.config-line {
     padding: 2px 5px;
     margin: 1px 0;
     border-radius: 2px;
-}
+}*/
 
 .same-line {
     background-color: #e8f5e9;
@@ -1197,11 +1205,14 @@ footer {
 
 .diff-marker {
     display: inline-block;
-    width: 20px;
-    height: 20px;
+    /*width: 20px;
+    height: 20px;*/
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
-    font-size: 10px;
-    line-height: 20px;
+    /*font-size: 10px;*/
+    font-size: 12px;
+    /*line-height: 20px;*/
     text-align: center;
     color: white;
     margin: 2px auto;
@@ -1228,3 +1239,7 @@ footer {
     scroll-behavior: smooth;
 }
 /* Fine stili per confronto configurazioni */
+
+/* ============================================================================================ */
+/*                       FINE STILI TABELLA COMPARE                                             */
+/* ============================================================================================ */

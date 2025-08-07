@@ -556,103 +556,6 @@ function backupAllSwitches() {
     });
 }
 
-/*function openBackupListModal(index) {
-    fetch('/get_switch_backups', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': getCSRFToken()
-        },
-        body: JSON.stringify({ index }),
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            const modal = document.getElementById('backup-list-modal');
-            const switchName = document.getElementById('modal-switch-name');
-            const backupList = document.getElementById('backup-list');
-
-            switchName.textContent = data.hostname;
-            backupList.innerHTML = '';
-
-            if (data.backups.length === 0) {
-                backupList.innerHTML = '<p>No avalaible backup</p>';
-            } else {
-                data.backups.forEach(backup => {
-                    const backupItem = document.createElement('div');
-                    backupItem.className = 'backup-item';
-                    backupItem.textContent = backup.filename;
-                    backupItem.onclick = () => loadBackupContent(backup.path, index);
-                    backupList.appendChild(backupItem);
-                });
-            }
-
-            document.getElementById('backup-content').style.display = 'none';
-            document.getElementById('backup-content-placeholder').style.display = 'block';
-            modal.style.display = 'block';
-        } else {
-            showStatus('Error: ' + data.message, 'error');
-        }
-    });
-
-    document.addEventListener('keydown', handleEscConfigModal);
-}*/
-
-/*
-function openBackupListModal(index) {
-fetch('/get_switch_backups', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': getCSRFToken()
-    },
-    body: JSON.stringify({ index }),
-})
-.then(response => response.json())
-.then(data => {
-    if (data.success) {
-        const modal = document.getElementById('backup-list-modal');
-        const switchName = document.getElementById('modal-switch-name');
-        const backupList = document.getElementById('backup-list');
-        const exportAllBtn = document.getElementById('export-all-backup-btn');
-
-        switchName.textContent = data.hostname;
-        backupList.innerHTML = '';
-
-        // Imposta l'indice dello switch sul pulsante Export All
-        exportAllBtn.setAttribute('data-switch-index', index);
-        alert(exportAllBtn.getAttribute('data-switch-index'));
-        if (data.backups.length === 0) {
-            backupList.innerHTML = '<p>No available backups</p>';
-            exportAllBtn.disabled = true;
-            exportAllBtn.title = 'No backups available';
-            exportAllBtn.style.opacity = '0.5';
-            exportAllBtn.style.cursor = 'not-allowed';
-        } else {
-            data.backups.forEach(backup => {
-                const backupItem = document.createElement('div');
-                backupItem.className = 'backup-item';
-                backupItem.textContent = backup.filename;
-                backupItem.onclick = () => loadBackupContent(backup.path, index);
-                backupList.appendChild(backupItem);
-            });
-
-            exportAllBtn.disabled = false;
-            exportAllBtn.title = 'Export all backups as ZIP';
-            exportAllBtn.style.opacity = '1';
-            exportAllBtn.style.cursor = 'pointer';
-        }
-
-        document.getElementById('backup-content').style.display = 'none';
-        document.getElementById('backup-content-placeholder').style.display = 'block';
-        modal.style.display = 'block';
-    } else {
-        showStatus('Error: ' + data.message, 'error');
-    }
-});
-}
-*/
-
 function openBackupListModal(index) {
     fetch('/get_switch_backups', {
         method: 'POST',
@@ -887,11 +790,13 @@ function setupSyncScroll() {
         target1.scrollTop = source.scrollTop;
         target2.scrollTop = source.scrollTop;
         
-        setTimeout(() => { source.syncing = false; }, 100);
+        setTimeout(() => { source.syncing = false; }, 1);
     };
     
     // Aggiungi gli event listeners per lo scroll
+    //leftPanel.addEventListener('scroll', () => syncScroll(leftPanel, rightPanel));
     leftPanel.addEventListener('scroll', () => syncScroll(leftPanel, rightPanel, diffPanel));
+    //rightPanel.addEventListener('scroll', () => syncScroll(rightPanel, leftPanel));
     rightPanel.addEventListener('scroll', () => syncScroll(rightPanel, leftPanel, diffPanel));
     diffPanel.addEventListener('scroll', () => syncScroll(diffPanel, leftPanel, rightPanel));
 }
@@ -966,12 +871,12 @@ function openCompareModal(sourcePath, comparePath, deviceName) {
             // Estrai i nomi dei file dai percorsi
             const sourceName = sourcePath.split('/').pop();
             const compareName = comparePath.split('/').pop();
-            
+            const comparisonDeviceName = document.getElementById('comparison-switch-name');
+
             // Imposta i titoli
-            deviceName.textContent = deviceName;
-            document.getElementById('compare-title').textContent = `${sourceName} vs ${compareName}`;
-            document.getElementById('left-panel-title').textContent = sourceName;
-            document.getElementById('right-panel-title').textContent = compareName;
+            comparisonDeviceName.textContent = deviceName;
+            document.getElementById('left-file-info').textContent = sourceName;
+            document.getElementById('right-file-info').textContent = compareName;
             
             // Confronta i contenuti
             compareConfigurations(sourceData.content, compareData.content);
