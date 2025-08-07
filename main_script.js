@@ -1,0 +1,1437 @@
+let switchesPerPage = 15;
+let currentSortColumn = -1;
+let sortDirection = 1;
+let currentPage = 1;
+let allSwitches = [];
+let filteredSwitches = [];
+
+window.eval = function() {
+    throw new Error("eval() is disabled for security reasons");
+};
+
+// Funzione di utilità per escape HTML
+function escapeHtml(unsafe) {
+    return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function changeItemsPerPage() {
+    const select = document.getElementById('items-per-page');
+    switchesPerPage = parseInt(select.value);
+    currentPage = 1; // Resetta alla prima pagina quando cambi il numero di elementi
+    renderSwitches();
+    updatePagination();
+}
+
+function safeInsert(text) {
+    return text.replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function filterSwitches() {
+    const searchTerm = document.getElementById('search-input').value.toLowerCase();
+
+    if (searchTerm.trim() === '') {
+        filteredSwitches = [...allSwitches];
+    } else {
+        filteredSwitches = allSwitches.filter(sw => 
+            sw.hostname.toLowerCase().includes(searchTerm) || 
+            sw.ip.toLowerCase().includes(searchTerm) ||
+            (sw.username && sw.username.toLowerCase().includes(searchTerm)) ||
+            sw.device_type.toLowerCase().includes(searchTerm)
+        );
+    }
+
+    currentPage = 1; // Resetta alla prima pagina quando filtri
+    renderSwitches();
+    updatePagination();
+}
+
+
+function renderSwitches() {
+    const tbody = document.getElementById('switches-table-tbody');
+    tbody.innerHTML = '';
+
+    if (filteredSwitches.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No matching devices found</td></tr>';
+        return;
+    }
+
+    const startIndex = (currentPage - 1) * switchesPerPage;
+    const endIndex = Math.min(startIndex + switchesPerPage, filteredSwitches.length);
+    const switchesToShow = filteredSwitches.slice(startIndex, endIndex);
+
+    switchesToShow.forEach((sw, i) => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+<td>
+<span class="backup-status" id="status-${sw.originalIndex}" title="${getStatusTooltip(sw)}">
+<i class="fas fa-circle" style="color: ${getStatusColor(sw)}; font-size: 10px; margin-right: 5px;"></i>
+</span>
+${highlightMatches(sw.hostname)}
+</td>
+<td>${highlightMatches(sw.ip)}</td>
+<td>${highlightMatches(sw.username)}</td>
+<td>
+<button class="action-btn backup-btn" title="Backup" onclick="backupSwitch(${sw.originalIndex})">
+<i class="fas fa-download"></i>
+</button>
+<button class="action-btn edit-btn" title="Modifica" onclick="openEditModal(${sw.originalIndex})">
+<i class="fas fa-edit"></i>
+</button>
+<button class="action-btn view-btn" title="Visualizza Backup" onclick="openBackupListModal(${sw.originalIndex})">
+<i class="fas fa-eye"></i>
+</button>
+<button class="action-btn delete-btn" title="Elimina" onclick="deleteSwitch(${sw.originalIndex})">
+<i class="fas fa-trash"></i>
+</button>
+</td>
+    `;
+    tbody.appendChild(row);
+    });
+}
+
+function getStatusColor(switchData) {
+    if (!switchData.last_backup_status) return 'gray'; // mai eseguito
+    if (switchData.last_backup_status === 'success') return 'green'; //backup ok
+    if (switchData.last_backup_status === 'failed') return 'red'; // backup fallito
+    return 'gray';
+}
+
+function getStatusTooltip(switchData) {
+    if (!switchData.last_backup_status) return 'Backup never attempted';
+
+    if (switchData.last_backup_status === 'success') 
+    return `Last successful backup: ${switchData.last_backup_time}`;
+
+    if (switchData.last_backup_status === 'failed') 
+    return `Last backup failed: ${switchData.last_backup_time}`;
+
+    return 'Unknown status';
+}
+
+
+
+function highlightMatches(text) {
+    const searchTerm = document.getElementById('search-input').value.toLowerCase();
+
+    if (!text) return ''; // Aggiunto controllo per valori null/undefined
+    if (!searchTerm || !text) return text;
+
+    const str = text.toString();
+    const lowerStr = str.toLowerCase();
+    const termLower = searchTerm.toLowerCase();
+
+    let result = '';
+    let lastIndex = 0;
+    let index = lowerStr.indexOf(termLower);
+
+    while (index >= 0) {
+        result += str.substring(lastIndex, index) + 
+        '<span style="background-color: yellow;">' + 
+        str.substring(index, index + searchTerm.length) + 
+        '</span>';
+
+        lastIndex = index + searchTerm.length;
+        index = lowerStr.indexOf(termLower, lastIndex);
+    }
+
+    result += str.substring(lastIndex);
+    return result;
+}
+
+function updatePagination() {
+    const pageCount = Math.ceil(filteredSwitches.length / switchesPerPage);
+    const paginationDiv = document.getElementById('pagination');
+    paginationDiv.innerHTML = '';
+
+    // Aggiorna la selezione nel menu a tendina
+    document.getElementById('items-per-page').value = switchesPerPage;
+
+    // Funzione per pulire tutti gli stati attivi
+    const clearActiveStates = () => {
+        document.querySelectorAll('#pagination button').forEach(b => {
+            b.classList.remove('active');
+            b.disabled = false;
+        });
+    };
+
+    // Pulsante "Indietro"
+    const prevBtn = document.createElement('button');
+    prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+    prevBtn.disabled = currentPage === 1;
+
+    prevBtn.onclick = () => {
+        if (currentPage > 1) {
+            clearActiveStates();
+            currentPage--;
+            renderSwitches();
+            updatePagination();
+        }
+    };
+
+    paginationDiv.appendChild(prevBtn);
+
+    // Pulsanti numerici
+    for (let i = 1; i <= pageCount; i++) {
+        const btn = document.createElement('button');
+        btn.textContent = i;
+
+        btn.onclick = () => {
+            clearActiveStates();
+            currentPage = i;
+            btn.classList.add('active');
+            btn.disabled = true;
+            renderSwitches();
+            updatePagination();
+        };
+
+        if (i === currentPage) {
+            btn.classList.add('active');
+            btn.disabled = true;
+        }
+
+        paginationDiv.appendChild(btn);
+    }
+
+    // Pulsante "Avanti"
+    const nextBtn = document.createElement('button');
+    nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+    nextBtn.disabled = currentPage >= pageCount;
+
+    nextBtn.onclick = () => {
+        if (currentPage < pageCount) {
+            clearActiveStates();
+            currentPage++;
+            renderSwitches();
+            updatePagination();
+        }
+    };
+
+    paginationDiv.appendChild(nextBtn);
+
+    if (pageCount === 0) {
+        paginationDiv.innerHTML = '<span>No devices found</span>';
+    }
+}
+
+function addSwitch() {
+    const hostname = document.getElementById('hostname').value;
+    const ip = document.getElementById('ip').value;
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    const enablePassword = document.getElementById('enable-password').value;
+    const deviceType = document.getElementById('device-type').value;
+
+    if (!hostname || !ip || !username || !password) {
+        showStatus('Please fill all required fields', 'error');
+        return;
+    }
+
+    const switchData = { 
+        hostname, 
+        ip, 
+        username, 
+        password,
+        device_type: deviceType
+    };
+
+    if (enablePassword) {
+        switchData.enable_password = enablePassword;
+    }
+
+    fetch('/add_switch', {
+        method: 'POST',
+        headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCSRFToken()
+        },
+        body: JSON.stringify(switchData),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            updateSwitchTable();
+            document.getElementById('hostname').value = '';
+            document.getElementById('ip').value = '';
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            showStatus('Switch aggiunto con successo', 'success');
+            addToLog(`Device ${hostname} (${ip}) added to the list`);
+        } else {
+            showStatus('Error: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        showStatus('Connection error: ' + error, 'error');
+    });
+}
+
+function uploadCSV() {
+    const fileInput = document.getElementById('csv-file');
+    const file = fileInput.files[0];
+
+    if (!file) {
+        showStatus('Select a CSV file to load', 'error');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('csv_file', file);
+
+    fetch('/upload_csv', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': getCSRFToken()
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            showStatus(`Loaded ${data.added} devices from CSV (${data.skipped} already in the list)`, 'success');
+            addToLog(`Loaded ${data.added} devices from CSV file`);
+            updateSwitchTable();
+            fileInput.value = '';
+        } else {
+            showStatus('Error: ' + data.message, 'error');
+            addToLog(`CSV load failed: ${data.message}`);
+        }
+    })
+    .catch(error => {
+        showStatus('Error: ' + error.message, 'error');
+        addToLog(`Error during CSV load: ${error.message}`);
+    });
+}
+
+function sortTable(columnIndex) {
+    if (currentSortColumn === columnIndex) {
+        sortDirection *= -1;
+    } else {
+        currentSortColumn = columnIndex;
+        sortDirection = 1;
+    }
+
+    // Ordina filteredSwitches invece di fare una nuova richiesta
+    filteredSwitches.sort((a, b) => {
+        const keys = ['hostname', 'ip', 'username'];
+        const key = keys[columnIndex];
+        const valA = a[key]?.toLowerCase() || '';
+        const valB = b[key]?.toLowerCase() || '';
+
+        if (valA < valB) return -1 * sortDirection;
+        if (valA > valB) return 1 * sortDirection;
+
+        return 0;
+    });
+
+    currentPage = 1; // Resetta alla prima pagina quando si ordina
+    renderSwitches();
+    updatePagination();
+    updateSortIcons();
+}
+
+function updateSwitchTable() {
+    fetch('/get_switches')
+    .then(response => response.json())
+    .then(switchesData => {
+        allSwitches = switchesData.map((sw, index) => ({...sw, originalIndex: index}));
+        filteredSwitches = [...allSwitches];
+
+        renderSwitches();
+        updatePagination();
+        updateSortIcons();
+
+        filterSwitches();
+    })
+    .catch(error => {
+        console.error('Device load failed:', error);
+        const tbody = document.getElementById('switches-table-tbody');
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: red;">Error during the device update</td></tr>';
+    });
+}
+
+function updateSortIcons() {
+    const headers = document.querySelectorAll('.switch-table th');
+
+    headers.forEach((header, index) => {
+        const icon = header.querySelector('i');
+        if (icon) {
+            if (index === currentSortColumn) {
+                icon.className = sortDirection === 1 ? 'fas fa-sort-up' : 'fas fa-sort-down';
+            } else {
+                icon.className = 'fas fa-sort';
+            }
+        }
+    });
+}
+
+function deleteSwitch(index) {
+    fetch('/get_switches')
+    .then(response => response.json())
+    .then(switchesData => {
+        if (index >= 0 && index < switchesData.length) {
+            const hostname = switchesData[index].hostname;
+
+            if (!confirm(`Are you sure you wanna deleted the device ${hostname}?`)) {
+                return;
+            }
+
+            fetch('/delete_switch', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCSRFToken()
+                },
+                body: JSON.stringify({ index: index }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    updateSwitchTable();
+                    updateSchedulesList();
+                    showStatus(`Device ${hostname} deleted successfully`, 'success');
+                    addToLog(`Device ${hostname} removed from list`);
+                } else {
+                    showStatus('Error: ' + data.message, 'error');
+                    addToLog(`ERROR - device delete failed ${hostname}: ${data.message}`);
+                }
+            })
+            .catch(error => {
+                showStatus('Connection error: ' + error, 'error');
+                addToLog(`ERROR - device delete failed: ${error}`);
+            });
+        }
+    });
+}
+
+function backupSwitch(index) {
+    // Prima recuperiamo i dati dello switch per ottenere l'hostname
+    fetch('/get_switches')
+    .then(response => response.json())
+    .then(switchesData => {
+        if (index >= 0 && index < switchesData.length) {
+            const switchData = switchesData[index];
+            const statusMessage = `Starting backup for ${switchData.hostname} (${switchData.ip})...`;
+            showStatus(statusMessage, 'success');
+            addToLog(statusMessage);
+
+            // Poi eseguiamo il backup
+            fetch('/backup_switch', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCSRFToken()
+                },
+                body: JSON.stringify({ index: parseInt(index) }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const successMessage = `Backup completed for ${data.hostname}`;
+                    showStatus(successMessage, 'success');
+                    addToLog(successMessage);
+                    addToLog(`Config saved at: ${data.filename}`);
+                } else {
+                    const errorMessage = `Backup error for ${switchData.hostname}: ${data.message}`;
+                    showStatus(errorMessage, 'error');
+                    addToLog(`ERROR - backup failed for ${switchData.hostname}: ${data.message}`);
+                }
+            })
+            .catch(error => {
+                const errorMessage = `Connection error for ${switchData.hostname}: ${error}`;
+                showStatus(errorMessage, 'error');
+                addToLog(`ERROR - Connection failed for ${switchData.hostname}: ${error}`);
+            });
+        }
+    })
+    .catch(error => {
+        const errorMessage = `Error fetching switch data: ${error}`;
+        showStatus(errorMessage, 'error');
+        addToLog(`ERROR - Failed to get switch data: ${error}`);
+    });
+}
+
+function backupAllSwitches() {
+    addToLog('Starting backup for all devices...');
+
+    fetch('/backup_all_switches', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showStatus(`Backup completato per ${data.count} switch`, 'success');
+            data.results.forEach(result => {
+                if (result.success) {
+                    addToLog(`Backup completato per ${result.hostname} (${result.ip})`);
+                } else {
+                    addToLog(`ERROR during the backup of ${result.hostname}: ${result.message}`);
+                }
+            });
+        } else {
+            showStatus('Error: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        showStatus('Connection error: ' + error, 'error');
+    });
+}
+
+function backupAllSwitches() {
+    const statusMessage = 'Starting backup for all devices...';
+    showStatus(statusMessage, 'success');
+    addToLog(statusMessage);
+
+    fetch('/backup_all_switches', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const successMessage = `Backup completed for ${data.count} devices`;
+            showStatus(successMessage, 'success');
+            data.results.forEach(result => {
+                if (result.success) {
+                    addToLog(`Backup completed for ${result.hostname} (${result.ip})`);
+                } else {
+                    addToLog(`ERROR during the backup of ${result.hostname}: ${result.message}`);
+                }
+            });
+        } else {
+            const errorMessage = `Backup error: ${data.message}`;
+            showStatus(errorMessage, 'error');
+        }
+    })
+    .catch(error => {
+        const errorMessage = `Connection error: ${error}`;
+        showStatus(errorMessage, 'error');
+    });
+}
+
+/*function openBackupListModal(index) {
+    fetch('/get_switch_backups', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        },
+        body: JSON.stringify({ index }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const modal = document.getElementById('backup-list-modal');
+            const switchName = document.getElementById('modal-switch-name');
+            const backupList = document.getElementById('backup-list');
+
+            switchName.textContent = data.hostname;
+            backupList.innerHTML = '';
+
+            if (data.backups.length === 0) {
+                backupList.innerHTML = '<p>No avalaible backup</p>';
+            } else {
+                data.backups.forEach(backup => {
+                    const backupItem = document.createElement('div');
+                    backupItem.className = 'backup-item';
+                    backupItem.textContent = backup.filename;
+                    backupItem.onclick = () => loadBackupContent(backup.path, index);
+                    backupList.appendChild(backupItem);
+                });
+            }
+
+            document.getElementById('backup-content').style.display = 'none';
+            document.getElementById('backup-content-placeholder').style.display = 'block';
+            modal.style.display = 'block';
+        } else {
+            showStatus('Error: ' + data.message, 'error');
+        }
+    });
+
+    document.addEventListener('keydown', handleEscConfigModal);
+}*/
+
+/*
+function openBackupListModal(index) {
+fetch('/get_switch_backups', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCSRFToken()
+    },
+    body: JSON.stringify({ index }),
+})
+.then(response => response.json())
+.then(data => {
+    if (data.success) {
+        const modal = document.getElementById('backup-list-modal');
+        const switchName = document.getElementById('modal-switch-name');
+        const backupList = document.getElementById('backup-list');
+        const exportAllBtn = document.getElementById('export-all-backup-btn');
+
+        switchName.textContent = data.hostname;
+        backupList.innerHTML = '';
+
+        // Imposta l'indice dello switch sul pulsante Export All
+        exportAllBtn.setAttribute('data-switch-index', index);
+        alert(exportAllBtn.getAttribute('data-switch-index'));
+        if (data.backups.length === 0) {
+            backupList.innerHTML = '<p>No available backups</p>';
+            exportAllBtn.disabled = true;
+            exportAllBtn.title = 'No backups available';
+            exportAllBtn.style.opacity = '0.5';
+            exportAllBtn.style.cursor = 'not-allowed';
+        } else {
+            data.backups.forEach(backup => {
+                const backupItem = document.createElement('div');
+                backupItem.className = 'backup-item';
+                backupItem.textContent = backup.filename;
+                backupItem.onclick = () => loadBackupContent(backup.path, index);
+                backupList.appendChild(backupItem);
+            });
+
+            exportAllBtn.disabled = false;
+            exportAllBtn.title = 'Export all backups as ZIP';
+            exportAllBtn.style.opacity = '1';
+            exportAllBtn.style.cursor = 'pointer';
+        }
+
+        document.getElementById('backup-content').style.display = 'none';
+        document.getElementById('backup-content-placeholder').style.display = 'block';
+        modal.style.display = 'block';
+    } else {
+        showStatus('Error: ' + data.message, 'error');
+    }
+});
+}
+*/
+
+function openBackupListModal(index) {
+    fetch('/get_switch_backups', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        },
+        body: JSON.stringify({ index }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const modal = document.getElementById('backup-list-modal');
+            const switchName = document.getElementById('modal-switch-name');
+            const backupList = document.getElementById('backup-list');
+            const exportAllBtn = document.getElementById('export-all-backup-btn');
+            const backupButtonBar = document.getElementById('backup-button-bar');
+
+            switchName.textContent = data.hostname;
+            backupList.innerHTML = '';
+
+            // Riempio barra pulsanti con i bottoni, e valorizzo l'index del compare-select-btn
+            backupButtonBar.innerHTML = `
+<button class="action-btn compare-select-btn" id="compare-select-btn" onclick="openCompareSelectModal(${index})" style="padding: 5px 12px; font-size: 13px;">
+<i class="fa-solid fa-code-compare"></i> Compare
+</button>
+<button class="action-btn backup-btn" id="export-backup-btn" onclick="exportBackup()" style="padding: 5px 12px; font-size: 13px;">
+<i class="fas fa-download"></i> Export
+</button>
+<button class="action-btn delete-btn" id="delete-backup-btn" onclick="deleteBackup()" style="padding: 5px 12px; font-size: 13px;">
+<i class="fas fa-trash"></i> Delete
+</button>
+`
+            // Imposta l'indice dello switch sul pulsante Export All
+            exportAllBtn.setAttribute('data-switch-index', index);
+
+            if (data.backups.length === 0) {
+                backupList.innerHTML = '<p>No available backups</p>';
+                exportAllBtn.disabled = true;
+                exportAllBtn.title = 'No backups available';
+                exportAllBtn.style.opacity = '0.5';
+                exportAllBtn.style.cursor = 'not-allowed';
+            } else {
+                data.backups.forEach(backup => {
+                    const backupItem = document.createElement('div');
+                    backupItem.className = 'backup-item';
+                    backupItem.textContent = backup.filename;
+                    backupItem.setAttribute('data-path', backup.path);
+                    backupItem.onclick = () => loadBackupContent(backup.path, index);
+                    backupList.appendChild(backupItem);
+                });
+
+                exportAllBtn.disabled = false;
+                exportAllBtn.title = 'Export all backups as ZIP';
+                exportAllBtn.style.opacity = '1';
+                exportAllBtn.style.cursor = 'pointer';
+            }
+
+            document.getElementById('backup-content').style.display = 'none';
+            document.getElementById('backup-content-placeholder').style.display = 'block';
+            modal.style.display = 'block';
+        } else {
+            showStatus('Error: ' + data.message, 'error');
+        }
+    });
+
+    document.addEventListener('keydown', handleEscConfigModal);
+}
+
+function loadBackupContent(filepath, switchIndex) {
+    fetch('/get_backup_content', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        },
+        body: JSON.stringify({ filepath }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const contentDiv = document.getElementById('backup-content');
+            const placeholder = document.getElementById('backup-content-placeholder');
+            const configContent = document.querySelector('#backup-content .config-content');
+            const compareBtn = document.getElementById('compare-select-btn');
+            const exportBtn = document.getElementById('export-backup-btn');
+            const deleteBtn = document.getElementById('delete-backup-btn');
+
+            configContent.textContent = ""
+            configContent.textContent = data.content;
+
+            contentDiv.style.display = 'flex';
+            placeholder.style.display = 'none';
+            compareBtn.style.display = 'inline-block';
+            exportBtn.style.display = 'inline-block';
+            deleteBtn.style.display = 'inline-block';
+            deleteBtn.setAttribute('data-filepath', filepath);
+            deleteBtn.setAttribute('data-switch-index', switchIndex);
+
+            // Evidenzio il backup selezionato nella lista
+            document.querySelectorAll('.backup-item').forEach(item => {
+                item.classList.toggle('active', item.textContent.includes(data.filename));
+            });
+        } else {
+            const configContent = document.querySelector('#backup-content .config-content');
+            configContent.textContent = "File not found!";
+        }
+    });
+}
+
+function openCompareSelectModal(index) {
+    fetch('/get_switch_backups', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        },
+        body: JSON.stringify({ index }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const modal = document.getElementById('compare-select-modal');
+            const switchName = document.getElementById('compare-switch-name');
+            const compareBackupList = document.getElementById('compare-backup-list');
+            const compareConfirmBtn = document.getElementById('compare-confirm-btn');
+
+            switchName.textContent = data.hostname;
+            compareBackupList.innerHTML = '';
+
+            // Prendo source file path dalla modal precedente, e lo 
+            // imposto su bottone Compare
+            const deleteBtn = document.getElementById('delete-backup-btn');
+            sourceFilePath = deleteBtn.getAttribute('data-filepath');
+            //debug command
+            alert(sourceFilePath);
+            compareConfirmBtn.setAttribute('source-file-path', sourceFilePath);
+
+            data.backups.forEach(backup => {
+                const compareBackupItem = document.createElement('div');
+                compareBackupItem.className = 'backup-item';
+                compareBackupItem.textContent = backup.filename;
+                compareBackupItem.setAttribute('data-path', backup.path);
+                compareBackupItem.onclick = () => loadCompareSelectedBackupContent(backup.path, index);
+                compareBackupList.appendChild(compareBackupItem);
+            });
+
+            compareConfirmBtn.disabled = false;
+            compareConfirmBtn.title = 'Compare the configuration';
+            compareConfirmBtn.style.opacity = '1';
+            compareConfirmBtn.style.cursor = 'pointer';
+            
+            modal.style.display = 'block';
+        } else {
+            showStatus('Error: ' + data.message, 'error');
+        }
+    });
+
+    document.addEventListener('keydown', handleEscCompareSelectModal);
+}
+
+function loadCompareSelectedBackupContent(filepath, switchIndex) {
+    fetch('/get_backup_content', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        },
+        body: JSON.stringify({ filepath }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const compareConfirmBtn = document.getElementById('compare-confirm-btn');
+            const contentDiv = document.getElementById('compare-backup-content');
+            const placeholder = document.getElementById('compare-backup-content-placeholder');
+            const configContent = document.querySelector('#compare-backup-content .config-content');
+            /*const compareBtn = document.getElementById('compare-select-btn');
+            const exportBtn = document.getElementById('export-backup-btn');
+            const deleteBtn = document.getElementById('delete-backup-btn');*/
+
+            configContent.textContent = data.content;
+
+            contentDiv.style.display = 'flex';
+            placeholder.style.display = 'none';
+            /*compareBtn.style.display = 'inline-block';
+            exportBtn.style.display = 'inline-block';
+            deleteBtn.style.display = 'inline-block';
+            deleteBtn.setAttribute('data-filepath', filepath);
+            deleteBtn.setAttribute('data-switch-index', switchIndex);*/
+            
+            //debug command
+            alert(filepath);
+            compareConfirmBtn.setAttribute('compare-file-path', filepath);
+            //debug command
+            alert('Dovrò confrontare il \n' + compareConfirmBtn.getAttribute('source-file-path') + '\n con il \n' + compareConfirmBtn.getAttribute('compare-file-path'));
+
+            // Evidenzio il backup selezionato nella lista
+            document.querySelectorAll('.backup-item').forEach(item => {
+                item.classList.toggle('active', item.textContent.includes(data.filename));
+            });
+        } else {
+            const configContent = document.querySelector('#compare-backup-content .config-content');
+            configContent.textContent = "File not found!";
+        }
+    });
+}
+
+function startConfigurationCompare() {
+    alert('Ciumbia!');
+}
+
+function exportAllBackup() {
+    const backupItems = document.querySelectorAll('.backup-item');
+    if (backupItems.length === 0) {
+        showStatus('No backups available for export', 'error');
+        return;
+    }
+
+    const switchName = document.getElementById('modal-switch-name').textContent.trim();
+    showStatus('Preparing all backups for export...', 'success');
+
+    // Recupera tutti i percorsi dei backup dalla lista già caricata
+    const backups = [];
+    backupItems.forEach(item => {
+        backups.push({
+            filename: item.textContent,
+            path: item.getAttribute('data-path') || ''
+        });
+    });
+
+    // Chiamata al backend per creare lo ZIP
+    fetch('/export_all_backups', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        },
+        body: JSON.stringify({ 
+            backups: backups,
+            hostname: switchName
+        }),
+    })
+    .then(response => response.blob())
+    .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${switchName}_all_backups_${new Date().toISOString().slice(0, 10)}.zip`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        showStatus(`All backups exported successfully`, 'success');
+    })
+    .catch(error => {
+        showStatus('Export failed: ' + error, 'error');
+    });
+}
+
+function exportBackup() {
+    const configContent = document.querySelector('#backup-content .config-content').textContent;
+    const filename = document.querySelector('.backup-item.active').textContent;
+
+    // Crea un blob con il contenuto
+    const blob = new Blob([configContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+
+    // Crea un link temporaneo e simula il click
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+
+    // Pulisci
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showStatus('Backup exported successfully', 'success');
+    addToLog(`Exported backup: ${filename}`);
+}
+
+function deleteBackup() {
+    const currentBackupPath = document.getElementById('delete-backup-btn').getAttribute('data-filepath');
+    if (!currentBackupPath) return;
+
+    if (!confirm('Are you sure you want to delete this backup? This action cannot be undone.')) {
+        return;
+    }
+
+    fetch('/delete_backup', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        },
+        body: JSON.stringify({ filepath: currentBackupPath }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showStatus('Backup deleted successfully', 'success');
+            addToLog(`Deleted backup: ${currentBackupPath}`);
+            closeConfigModal();
+            // Se stavi visualizzando i backup di uno switch specifico, potresti voler ricaricare la lista
+            const currentSwitchIndex = document.getElementById('delete-backup-btn').getAttribute('data-switch-index');
+
+            if (currentSwitchIndex) {
+                openBackupListModal(currentSwitchIndex);
+            }
+        } else {
+            showStatus('Error: ' + data.message, 'error');
+        }
+    })
+    .catch(error => {
+        showStatus('Connection error: ' + error, 'error');
+    });
+}
+
+function copyToClipboard(element) {
+    const configContent = element.querySelector('pre').textContent;
+    navigator.clipboard.writeText(configContent).then(() => {
+        const tooltip = element.querySelector('.tooltiptext');
+        tooltip.textContent = '✓ Copied!';
+        element.classList.add('copied');
+
+        setTimeout(() => {
+            tooltip.textContent = 'Copy to clipboard';
+            element.classList.remove('copied');
+        }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy: ', err);
+        element.querySelector('.tooltiptext').textContent = '✗ Failed to copy!';
+    });
+}
+
+function closeConfigModal() {
+    document.getElementById('backup-list-modal').style.display = 'none';
+    document.getElementById('compare-select-btn').style.display = 'none';
+    document.getElementById('export-backup-btn').style.display = 'none';
+    document.getElementById('delete-backup-btn').style.display = 'none';
+
+    document.removeEventListener('keydown', handleEscConfigModal);
+}
+
+function closeCompareSelectModal() {
+    document.getElementById('compare-select-modal').style.display = 'none';
+    document.removeEventListener('keydown', handleEscCompareSelectModal);
+}
+
+function openEditModal(index) {
+    fetch('/get_switches')
+    .then(response => response.json())
+    .then(switchesData => {
+        if (index >= 0 && index < switchesData.length) {
+            const switchData = switchesData[index];
+
+            document.getElementById('edit-hostname').value = switchData.hostname;
+            document.getElementById('edit-ip').value = switchData.ip;
+            document.getElementById('edit-device-type').value = switchData.device_type;
+            document.getElementById('edit-username').value = switchData.username;
+            document.getElementById('edit-password').value = '';
+            document.getElementById('edit-enable-password').value = '';
+            document.getElementById('edit-index').value = index;
+
+            document.getElementById('edit-modal').style.display = 'block';
+        }
+    });
+
+    document.addEventListener('keydown', handleEscEditModal);
+}
+
+function saveEditedSwitch() {
+    const index = document.getElementById('edit-index').value;
+    const hostname = document.getElementById('edit-hostname').value;
+    const ip = document.getElementById('edit-ip').value;
+    const username = document.getElementById('edit-username').value;
+    const password = document.getElementById('edit-password').value;
+    const enablePassword = document.getElementById('edit-enable-password').value;
+    const deviceType = document.getElementById('edit-device-type').value;
+
+    if (!hostname || !ip || !username) {
+        showStatus('Please fill all required fields', 'error');
+        return;
+    }
+
+    const switchData = {
+        index: parseInt(index),
+        hostname: hostname,
+        ip: ip,
+        username: username,
+        device_type: deviceType
+    };
+
+    if (password) {
+        switchData.password = password;
+    }
+
+    if (enablePassword) {
+        switchData.enable_password = enablePassword;
+    }
+
+    fetch('/update_switch', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        },
+        body: JSON.stringify(switchData),
+    })
+    .then(response => response.json())
+    .then(data => {
+        // salvo elenco switch, aggiorno tabella switch e schedule, e ripristino eventuale ricerca
+        if (data.success) {
+            updateSwitchTable();
+            updateSchedulesList();
+            closeEditModal();
+            showStatus('Device data updated successfully', 'success');
+            addToLog(`Device ${hostname} (${ip}) data updated`);
+        } else {
+            showStatus('Error: ' + data.message, 'error');
+        }
+    });
+}
+
+function closeEditModal() {
+    document.getElementById('edit-modal').style.display = 'none';
+    document.removeEventListener('keydown', handleEscEditModal);
+}
+
+function showStatus(message, type) {
+    const statusElement = document.getElementById('status-message');
+    statusElement.textContent = message;
+    statusElement.className = 'status ' + type;
+    statusElement.style.display = 'block';
+
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        statusElement.style.display = 'none';
+    }, 5000);
+}
+
+function addToLog(message) {
+    const logElement = document.getElementById('log');
+    const timestamp = new Date().toLocaleTimeString();
+    const messageDiv = document.createElement('div');
+    messageDiv.textContent = `[${timestamp}] ${message}`;
+
+    // Aggiunge classi in base al tipo di messaggio
+    if (message.includes('ERROR:')) {
+        messageDiv.style.color = '#ff6b6b';
+    } else if (message.includes('Starting') || message.includes('Connected') || message.includes('Executing')) {
+        messageDiv.style.color = '#51cf66';
+    } else if (message.includes('completed')) {
+        messageDiv.style.color = '#339af0';
+    }
+
+    logElement.insertBefore(messageDiv, logElement.firstChild);
+    logElement.scrollTop = 0;
+}
+
+function colorLogLine(line) {
+    const lowerLine = line.toLowerCase();
+    if (lowerLine.includes('error') || lowerLine.includes('failed')) {
+        return `<div class="log-line error">${line}</div>`;
+    } else if (lowerLine.includes('warning')) {
+        return `<div class="log-line warning">${line}</div>`;
+    } else if (lowerLine.includes('success') || lowerLine.includes('completed')) {
+        return `<div class="log-line success">${line}</div>`;
+    }
+
+    return `<div class="log-line">${line}</div>`;
+}
+
+
+
+function openLogModal() {
+    fetch('/get_full_log')
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const modal = document.getElementById('log-modal');
+            const logContent = document.getElementById('full-log-content');
+
+            // Pulisci e formatta il log
+            const lines = data.log.match(/[^\r\n]+/g) || [];
+            logContent.innerHTML = lines
+            .filter(line => line.trim())
+            .map(line => `<div class="log-line">${line}</div>`)
+            .join('');
+
+            modal.style.display = 'block';
+        } else {
+            showStatus('Error: ' + data.message, 'error');
+        }
+    });
+
+    document.addEventListener('keydown', handleEscLogModal);
+}
+
+function closeLogModal() {
+    document.getElementById('log-modal').style.display = 'none';
+    document.removeEventListener('keydown', handleEscLogModal);
+}
+
+window.onclick = function(event) {
+    const backupModal = document.getElementById('backup-list-modal');
+    const editModal = document.getElementById('edit-modal');
+    const logModal = document.getElementById('log-modal');
+    const compareselectModal = document.getElementById('compare-select-modal');
+
+    if (event.target === backupModal) {
+        backupModal.style.display = 'none';
+    }
+    if (event.target === editModal) {
+        editModal.style.display = 'none';
+    }
+    if (event.target === logModal) {
+        logModal.style.display = 'none';
+    }
+    if (event.target === compareselectModal) {
+        compareselectModal.style.display = 'none';
+    }
+}
+
+function showScheduleOptions() {
+    const type = document.getElementById('schedule-type').value;
+
+    document.querySelectorAll('.schedule-option').forEach(option => {
+        option.classList.remove('active');
+    });
+    
+    if (type === 'once') {
+        document.getElementById('once-option').classList.add('active');
+    } else if (type === 'weekly') {
+        document.getElementById('weekly-option').classList.add('active');
+    } else if (type === 'monthly') {
+        document.getElementById('monthly-option').classList.add('active');
+    } else if (type === 'yearly') {
+        document.getElementById('yearly-option').classList.add('active');
+    }
+}
+
+function addSchedule() {
+    const type = document.getElementById('schedule-type').value;
+    const time = document.getElementById('schedule-time').value;
+
+    const scheduleData = {
+        type: type,
+        time: time,
+        enabled: true
+    };
+
+    if (type === 'once') {
+        const date = document.getElementById('schedule-date').value;
+        if (!date) {
+            showStatus('Seleziona una data valida', 'error');
+            return;
+        }
+        scheduleData.date = date;
+    } else if (type === 'weekly') {
+        scheduleData.day_of_week = document.getElementById('schedule-day-week').value;
+    } else if (type === 'monthly') {
+        scheduleData.day = document.getElementById('schedule-day-month').value;
+    } else if (type === 'yearly') {
+        scheduleData.month = document.getElementById('schedule-month').value;
+        scheduleData.day = document.getElementById('schedule-day-year').value;
+    }
+
+    fetch('/add_schedule', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        },
+        body: JSON.stringify(scheduleData),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showStatus('Pianificazione aggiunta con successo', 'success');
+            updateSchedulesList();
+        } else {
+            showStatus('Error: ' + data.message, 'error');
+        }
+    });
+}
+
+function updateSchedulesList() {
+    fetch('/get_schedules')
+    .then(response => response.json())
+    .then(schedules => {
+        const list = document.getElementById('schedules-list');
+        list.innerHTML = '';
+
+        if (schedules.length === 0) {
+            list.innerHTML = '<p>No active schedule</p>';
+            return;
+        }
+
+        schedules.forEach(schedule => {
+            const item = document.createElement('div');
+            item.className = 'schedule-item';
+
+            const description = getScheduleDescription(schedule);
+
+            item.innerHTML = `
+<div class="schedule-item-header">
+<span>${description}</span>
+<div class="schedule-item-actions">
+<button class="action-btn ${schedule.enabled ? 'edit-btn' : 'backup-btn'}" 
+onclick="toggleSchedule('${schedule.id}', ${!schedule.enabled})">
+<i class="fas fa-${schedule.enabled ? 'pause' : 'play'}"></i>
+</button>
+<button class="action-btn delete-btn" onclick="deleteSchedule('${schedule.id}')">
+<i class="fas fa-trash"></i>
+</button>
+</div>
+</div>
+<div>Backup globale di tutti gli switch</div>
+<div>Prossima esecuzione: ${schedule.next_run || 'N/A'}</div>
+            `;
+
+            list.appendChild(item);
+        });
+    });
+}
+
+function toggleSchedule(scheduleId, enable) {
+    fetch('/toggle_schedule', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        },
+        body: JSON.stringify({ id: scheduleId, enabled: enable }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showStatus(`Pianificazione ${enable ? 'attivata' : 'disattivata'}`, 'success');
+            updateSchedulesList();
+        } else {
+            showStatus('Error: ' + data.message, 'error');
+        }
+    });
+}
+
+function deleteSchedule(scheduleId) {
+    if (!confirm('Sei sicuro di voler eliminare questa pianificazione?')) {
+        return;
+    }
+
+    fetch('/delete_schedule', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        },
+        body: JSON.stringify({ id: scheduleId }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showStatus('Pianificazione eliminata', 'success');
+            updateSchedulesList();
+        } else {
+            showStatus('Error: ' + data.message, 'error');
+        }
+    });
+}
+
+function getScheduleDescription(schedule) {
+    let desc = '';
+    const time = schedule.time || '00:00';
+
+    switch (schedule.type) {
+        case 'once':
+            desc = `Una volta il ${schedule.date} alle ${time}`;
+            break;
+        case 'daily':
+            desc = `Giornaliero alle ${time}`;
+            break;
+        case 'weekly':
+            const days = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
+            desc = `Settimanale ogni ${days[parseInt(schedule.day_of_week)]} alle ${time}`;
+            break;
+        case 'monthly':
+            desc = `Mensile il giorno ${schedule.day} alle ${time}`;
+            break;
+        case 'yearly':
+            const months = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 
+            'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
+            desc = `Annuale il ${schedule.day} ${months[parseInt(schedule.month) - 1]} alle ${time}`;
+            break;
+    }
+
+    return desc;
+}
+
+function getCSRFToken() {
+    const name = 'csrf_token';
+    const cookies = document.cookie.split(';');
+
+    for (let cookie of cookies) {
+        let [key, value] = cookie.trim().split('=');
+        if (key === name) return decodeURIComponent(value);
+    }
+
+    return '';
+}
+
+function exportSwitchesToCSV() {
+    fetch('/export_switches_csv')
+    .then(response => response.blob())
+    .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'switches_backup_' + new Date().toISOString().slice(0, 10) + '.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        showStatus('Esportazione CSV completata', 'success');
+        addToLog('Esportata lista switch in formato CSV');
+    });
+}
+
+function setupModalCloseOnEsc() {
+    // Chiudi modali quando si preme ESC
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            // Chiudi modale modifica switch
+            const editModal = document.getElementById('editSwitchModal');
+            if (editModal && editModal.style.display === 'block') {
+                closeEditModal();
+            }
+
+            // Chiudi modale visualizzazione log
+            const logModal = document.getElementById('viewLogModal');
+            if (logModal && logModal.style.display === 'block') {
+                closeLogModal();
+            }
+
+            // Chiudi modale visualizzazione configurazione
+            const configModal = document.getElementById('viewConfigModal');
+            if (configModal && configModal.style.display === 'block') {
+                closeConfigModal();
+            }
+        }
+    });
+}
+
+
+function handleEscEditModal(event) {
+    if (event.key === 'Escape') {
+        closeEditModal();
+    }
+}
+
+
+function handleEscLogModal(event) {
+    if (event.key === 'Escape') {
+        closeLogModal();
+    }
+}
+
+
+function handleEscConfigModal(event) {
+    if (event.key === 'Escape') {
+        closeConfigModal();
+    }
+}
+
+function handleEscCompareSelectModal(event) {
+    if (event.key === 'Escape') {
+        closeCompareSelectModal();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    updateSwitchTable();
+    showScheduleOptions();
+    updateSchedulesList();
+
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('schedule-date').min = today;
+    document.getElementById('schedule-date').value = today;
+});
+
+window.addEventListener('DOMContentLoaded', function() {
+    setupModalCloseOnEsc();
+});
+
+$(document).ready(function() {
+    $('select').select2({
+        width: '100%',
+        dropdownAutoWidth: true,
+        theme: 'default'
+    });
+    $('#device-type, #edit-device-type').select2({
+        width: 'resolve', // Usa la larghezza dell'elemento originale
+        minimumResultsForSearch: Infinity // Disabilita la ricerca se pochi elementi
+    });
+});
