@@ -1,4 +1,4 @@
-![PICKLED logo](https://raw.githubusercontent.com/AlastorApps/pickled/refs/heads/main/static/PICKLED_logo_github.png =320x320)
+![PICKLED logo](https://raw.githubusercontent.com/AlastorApps/pickled/refs/heads/main/static/PICKLED_logo_github.png | width=320)
 
 
 
