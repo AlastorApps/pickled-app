@@ -56,7 +56,7 @@ function filterSwitches() {
 
 
 function renderSwitches() {
-    const tbody = document.getElementById('switches-table-tbody');
+    const tbody = document.getElementById('switch-table-tbody');
     tbody.innerHTML = '';
 
     if (filteredSwitches.length === 0) {
@@ -79,6 +79,7 @@ ${highlightMatches(sw.hostname)}
 </td>
 <td>${highlightMatches(sw.ip)}</td>
 <td>${highlightMatches(sw.username)}</td>
+<td>${highlightMatches(sw.device_type)}</td>
 <td>
 <button class="action-btn backup-btn" title="Backup" onclick="backupSwitch(${sw.originalIndex})">
 <i class="fas fa-download"></i>
@@ -327,7 +328,7 @@ function sortTable(columnIndex) {
 
     // Ordina filteredSwitches invece di fare una nuova richiesta
     filteredSwitches.sort((a, b) => {
-        const keys = ['hostname', 'ip', 'username'];
+        const keys = ['hostname', 'ip', 'username', 'device_type'];
         const key = keys[columnIndex];
         const valA = a[key]?.toLowerCase() || '';
         const valB = b[key]?.toLowerCase() || '';
@@ -359,9 +360,34 @@ function updateSwitchTable() {
     })
     .catch(error => {
         console.error('Device load failed:', error);
-        const tbody = document.getElementById('switches-table-tbody');
+        const tbody = document.getElementById('switch-table-tbody');
         tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: red;">Error during the device update</td></tr>';
     });
+}
+
+function toggleSearchIcon() {
+    const searchInput = document.getElementById('search-input');
+    const searchIcon = document.getElementById('search-icon');
+
+    if (searchInput.value.length > 0) {
+        searchIcon.classList.remove('fa-search');
+        searchIcon.classList.add('fa-times');
+    } else {
+        searchIcon.classList.remove('fa-times');
+        searchIcon.classList.add('fa-search');
+    }
+}
+
+function clearSearch() {
+    const searchInput = document.getElementById('search-input');
+    const searchIcon = document.getElementById('search-icon');
+
+    if (searchIcon.classList.contains('fa-times')) {
+        searchInput.value = '';
+        searchIcon.classList.remove('fa-times');
+        searchIcon.classList.add('fa-search');
+        filterSwitches(); // Chiama di nuovo la funzione di filtro per aggiornare la lista
+    }
 }
 
 function updateSortIcons() {
@@ -1567,6 +1593,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 window.addEventListener('DOMContentLoaded', function() {
     setupModalCloseOnEsc();
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    toggleSearchIcon();
 });
 
 $(document).ready(function() {

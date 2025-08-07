@@ -81,8 +81,8 @@
                             <div style="position: relative;">
                                 <input type="text" id="search-input" placeholder="Search devices..." 
                                 style="padding: 5px 30px 5px 10px; border: 1px solid #ddd; border-radius: 4px; height: 30px; margin-right: 10px;"
-                                oninput="filterSwitches()">
-                                <i class="fas fa-search" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #777;"></i>
+                                oninput="filterSwitches(); toggleSearchIcon()">
+                                <i id="search-icon" class="fas fa-search" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #777; cursor: pointer;" onclick="clearSearch()"></i>
                             </div>
                             <button class="search-button exp-btn" onclick="exportSwitchesToCSV()">
                                 <i class="fas fa-file-export"></i> Export
@@ -104,6 +104,7 @@
                                 <th onclick="sortTable(0)">Hostname <i class="fas fa-sort"></i></th>
                                 <th onclick="sortTable(1)">IP <i class="fas fa-sort"></i></th>
                                 <th onclick="sortTable(2)">Username <i class="fas fa-sort"></i></th>
+                                <th onclick="sortTable(3)">Type <i class="fas fa-sort"></i></th>
                                 <th>Actions
                                     <span class="per-page-selector">
                                         <select id="items-per-page" onchange="changeItemsPerPage()">
@@ -119,7 +120,7 @@
                             </tr>
                         </thead>
 
-                        <tbody id="switches-table-tbody" class="switches-table-tbody">
+                        <tbody id="switch-table-tbody" class="switch-table-tbody">
                         <!-- Le righe della tabella verranno aggiunte qui dinamicamente -->
                         </tbody>
                     </table>

@@ -29,11 +29,6 @@ body {
     color: var(--dark-color);
 }
 
-.switch-table th:nth-child(4) {
-    position: relative;
-    padding-right: 120px;
-}
-
 .per-page-selector {
     position: absolute;
     right: 10px;  
@@ -194,12 +189,6 @@ body {
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
-}
-
-.switch-table-container {
-    flex: 1;
-    overflow-y: auto;
-    margin-top: 10px;
 }
 
 .search-container {
@@ -363,43 +352,6 @@ button:hover {
     padding: 15px;
     border-radius: 4px;
     font-family: monospace;
-}
-
-.switch-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
-    margin-top: 20px;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-}
-
-.switch-table th, .switch-table td {
-    padding: 8px 12px;
-    text-align: left;
-    border-bottom: 1px solid var(--primary-main-trans);
-}
-
-.switch-table th {
-    background-color: var(--petrol);
-    color: white;
-    cursor: pointer;
-    user-select: none;
-    position: sticky;
-    top: 0;
-}
-
-.switches-table-tbody th:hover {
-    background-color: var(--primary-hover);
-}
-
-.switch-table tr {
-    line-height: 1;
-}
-
-.switches-table-tbody tr:hover {
-    background-color: var(--gray-medium-trans);
 }
 
 .search-header-container {
@@ -944,23 +896,68 @@ footer {
     height: 30px !important;
 }
 
+.action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: #cccccc !important;
+}
+
+.fa-spinner {
+    margin-right: 5px;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* ============================================================================================ */
+/*                       INIZIO STILE TABELLA SWITCH                                              */
+/* ============================================================================================ */
+
+/* ==================== */
+/* CONTAINER PRINCIPALE */
+/* ==================== */
 .switch-table-container {
     width: 100%;
     height: calc(100vh);
     min-height: 300px;
+    margin-top: 10px;
     display: flex;
     flex-direction: column;
     position: relative;
     overflow: hidden;
-    border: 0px;
+    flex: 1;
 }
 
+/* ============= */
+/* STILI TABELLA */
+/* ============= */
 .switch-table {
     width: 100%;
-    margin: 0;
     border-collapse: collapse;
+    margin: 0;
+    border-spacing: 0;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
+/* ============= */
+/* INTESTAZIONE */
+/* ============= */
 .switch-table thead {
     display: table;
     width: 100%;
@@ -969,6 +966,26 @@ footer {
     color: white;
 }
 
+.switch-table th {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--primary-main-trans);
+    cursor: pointer;
+    user-select: none;
+    position: sticky;
+    top: 0;
+    background-color: var(--petrol);
+}
+
+/* Allineamento speciale per la quinta colonna */
+.switch-table td:nth-child(5) {
+    text-align: right;
+    padding-right: 16px;
+}
+
+/* ============= */
+/* CORPO TABELLA */
+/* ============= */
 .switch-table tbody {
     display: block;
     overflow-y: auto;
@@ -981,14 +998,58 @@ footer {
     right: 0;
 }
 
+/* ========= */
+/* RIGHE */
+/* ========= */
 .switch-table tr {
     display: table;
     width: 100%;
     table-layout: fixed;
+    line-height: 1;
 }
 
+.switch-table td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--primary-main-trans);
+}
+
+.switch-table th:nth-child(2),
+.switch-table td:nth-child(2) {
+    width: 15%
+}
+
+.switch-table th:nth-child(3),
+.switch-table td:nth-child(3) {
+    width: 15%
+}
+
+.switch-table th:nth-child(4),
+.switch-table td:nth-child(4) {
+    width: 15%
+}
+
+.switch-table th:nth-child(5),
+.switch-table td:nth-child(5) {
+    width: 15%
+}
+
+/* ================== */
+/* EFFETTI HOVER */
+/* ================== */
+.switch-table th:hover {
+    background-color: var(--primary-hover);
+}
+
+.switch-table tr:hover {
+    background-color: var(--gray-medium-trans);
+}
+
+/* ============= */
+/* SCROLLBAR */
+/* ============= */
 .switch-table tbody::-webkit-scrollbar {
-    width: 8px;
+    width: 16px;
 }
 
 .switch-table tbody::-webkit-scrollbar-track {
@@ -1004,15 +1065,16 @@ footer {
     background: #555;
 }
 
-.action-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    background-color: #cccccc !important;
-}
+/* ============================================================================================ */
+/*                       FINE STILI TABELLA SWITCH                                              */
+/* ============================================================================================ */
 
-.fa-spinner {
-    margin-right: 5px;
-}
+
+
+
+
+
+
 
 
 
