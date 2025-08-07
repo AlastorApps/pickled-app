@@ -1,4 +1,4 @@
-![PICKLED logo](https://raw.githubusercontent.com/AlastorApps/pickled/refs/heads/main/static/logo_pickled.png)
+![PICKLED logo](https://raw.githubusercontent.com/AlastorApps/pickled/refs/heads/main/static/PICKLED_logo_github.png)
 
 
 
