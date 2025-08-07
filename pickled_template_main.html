@@ -231,7 +231,7 @@
 
         <!-- Modal con l'elenco dei backup -->
         <div id="backup-list-modal" class="modal" style="z-index:1000">
-            <div class="modal-content" style="width: 90%; max-width: 1400px; height: 85vh;">
+            <div class="modal-content" style="width: 95%; max-width: 1600px; height: 90vh;">
                 <div class="modal-header">
                     <div class="modal-title">
                         Available backup by <span id="modal-switch-name"></span>
@@ -278,10 +278,10 @@
 
         <!-- Modal con l'elenco dei backup da confrontare -->
         <div id="compare-select-modal" class="modal" style="z-index:1010">
-            <div class="modal-content" style="width: 90%; max-width: 1400px; height: 85vh;">
+            <div class="modal-content" style="width: 95%; max-width: 1600px; height: 90vh;">
                 <div class="modal-header">
                     <div class="modal-title">
-                        Select which backup of <span id="compare-switch-name"></span> to compare
+                        Select which backup of <span id="compare-select-switch-name"></span> to compare
                     </div>
                     <button class="action-btn compare-confirm-btn" id="compare-confirm-btn" onclick="startConfigurationCompare()" style="padding: 5px 12px; font-size: 13px;">
                         <i class="fa-solid fa-code-compare"></i>Let's Compare !
@@ -320,7 +320,42 @@
 
         <!-- Modal con il confronto delle configurazioni -->
         <div id="config-compare-modal" class="modal" style="z-index:1020">
-            <!-- TO BE COMPLETED! -->
+            <div class="modal-content" style="width: 95%; max-width: 1600px; height: 90vh;">
+                <div class="modal-header">
+                    <div class="modal-title">
+                        Configuration comparison of <span id="comparison-switch-name"></span>
+                        <br/><span id="compare-title"></span>
+                    </div>
+                    <span class="close-btn" onclick="closeComparisonModal()">&times;</span>
+                </div>
+            </div>
+            <div class="modal-body" style="height: calc(100% - 60px);">
+                <div class="compare-container">
+                    <!-- Pannello sinistro - Configurazione originale -->
+                    <div class="compare-panel">
+                        <div class="compare-header">
+                            <h3 id="left-panel-title">Original</h3>
+                            <div class="compare-info" id="left-file-info"></div>
+                        </div>
+                        <div class="compare-content" id="left-config-content"></div>
+                    </div>
+
+                    <!-- Pannello centrale - Differenze -->
+                    <div class="compare-diff">
+                        <div class="diff-header">Differences</div>
+                        <div class="diff-content" id="diff-content"></div>
+                    </div>
+
+                    <!-- Pannello destro - Configurazione da confrontare -->
+                    <div class="compare-panel">
+                        <div class="compare-header">
+                            <h3 id="right-panel-title">Modified</h3>
+                            <div class="compare-info" id="right-file-info"></div>
+                        </div>
+                        <div class="compare-content" id="right-config-content"></div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Modal per modificare switch -->
@@ -395,6 +430,8 @@
         </div>
 
         <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/diff/5.0.0/diff.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jsdiff/4.0.2/diff.min.js"></script>
         
         <script>
             {pickled_js_template}

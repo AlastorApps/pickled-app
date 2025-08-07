@@ -750,7 +750,7 @@ function openCompareSelectModal(index) {
     .then(data => {
         if (data.success) {
             const modal = document.getElementById('compare-select-modal');
-            const switchName = document.getElementById('compare-switch-name');
+            const switchName = document.getElementById('compare-select-switch-name');
             const compareBackupList = document.getElementById('compare-backup-list');
             const compareConfirmBtn = document.getElementById('compare-confirm-btn');
 
@@ -761,9 +761,10 @@ function openCompareSelectModal(index) {
             // imposto su bottone Compare
             const deleteBtn = document.getElementById('delete-backup-btn');
             sourceFilePath = deleteBtn.getAttribute('data-filepath');
-            //debug command
-            alert(sourceFilePath);
+            // debug command
+            //alert(sourceFilePath);
             compareConfirmBtn.setAttribute('source-file-path', sourceFilePath);
+            compareConfirmBtn.setAttribute('compare-device-name', data.hostname);
 
             data.backups.forEach(backup => {
                 const compareBackupItem = document.createElement('div');
@@ -818,11 +819,12 @@ function loadCompareSelectedBackupContent(filepath, switchIndex) {
             deleteBtn.setAttribute('data-filepath', filepath);
             deleteBtn.setAttribute('data-switch-index', switchIndex);*/
             
-            //debug command
-            alert(filepath);
+            // debug command
+            //alert(filepath);
             compareConfirmBtn.setAttribute('compare-file-path', filepath);
+
             //debug command
-            alert('Dovrò confrontare il \n' + compareConfirmBtn.getAttribute('source-file-path') + '\n con il \n' + compareConfirmBtn.getAttribute('compare-file-path'));
+            //alert('Dovrò confrontare il \n' + compareConfirmBtn.getAttribute('source-file-path') + '\n con il \n' + compareConfirmBtn.getAttribute('compare-file-path'));
 
             // Evidenzio il backup selezionato nella lista
             document.querySelectorAll('.backup-item').forEach(item => {
@@ -835,8 +837,145 @@ function loadCompareSelectedBackupContent(filepath, switchIndex) {
     });
 }
 
+function fetchBackupContent(filepath) {
+    return fetch('/get_backup_content', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        },
+        body: JSON.stringify({ filepath }),
+    }).then(response => response.json());
+}
+
+function setupSyncScroll() {
+    const leftPanel = document.getElementById('left-config-content');
+    const rightPanel = document.getElementById('right-config-content');
+    const diffPanel = document.getElementById('diff-content');
+    
+    // Funzione per sincronizzare lo scroll
+    const syncScroll = (source, target1, target2) => {
+        if (source.syncing) return;
+        source.syncing = true;
+        
+        target1.scrollTop = source.scrollTop;
+        target2.scrollTop = source.scrollTop;
+        
+        setTimeout(() => { source.syncing = false; }, 100);
+    };
+    
+    // Aggiungi gli event listeners per lo scroll
+    leftPanel.addEventListener('scroll', () => syncScroll(leftPanel, rightPanel, diffPanel));
+    rightPanel.addEventListener('scroll', () => syncScroll(rightPanel, leftPanel, diffPanel));
+    diffPanel.addEventListener('scroll', () => syncScroll(diffPanel, leftPanel, rightPanel));
+}
+
+function compareConfigurations(sourceContent, compareContent) {
+    // Dividi i contenuti in righe
+    const sourceLines = sourceContent.split('\n');
+    const compareLines = compareContent.split('\n');
+    
+    // Usa un algoritmo diff per trovare le differenze
+    const diff = Diff.diffLines(sourceContent, compareContent);
+    
+    // Prepara i contenuti per la visualizzazione
+    let leftHtml = '';
+    let rightHtml = '';
+    let diffHtml = '';
+    let leftLineNum = 1;
+    let rightLineNum = 1;
+    
+    diff.forEach(part => {
+        const lines = part.value.split('\n');
+        lines.pop(); // Rimuovi l'ultima riga vuota
+        
+        if (part.added) {
+            // Righe aggiunte (solo nel file di destra)
+            lines.forEach(line => {
+                rightHtml += `<div class="config-line added-line">
+                    <span class="line-number">${rightLineNum++}</span>${escapeHtml(line)}
+                </div>`;
+                diffHtml += `<div class="diff-marker diff-added">+</div>`;
+            });
+        } else if (part.removed) {
+            // Righe rimosse (solo nel file di sinistra)
+            lines.forEach(line => {
+                leftHtml += `<div class="config-line removed-line">
+                    <span class="line-number">${leftLineNum++}</span>${escapeHtml(line)}
+                </div>`;
+                diffHtml += `<div class="diff-marker diff-removed">-</div>`;
+            });
+        } else {
+            // Righe uguali in entrambi i file
+            lines.forEach(line => {
+                leftHtml += `<div class="config-line same-line">
+                    <span class="line-number">${leftLineNum++}</span>${escapeHtml(line)}
+                </div>`;
+                rightHtml += `<div class="config-line same-line">
+                    <span class="line-number">${rightLineNum++}</span>${escapeHtml(line)}
+                </div>`;
+                diffHtml += `<div class="diff-marker diff-empty"> </div>`;
+            });
+        }
+    });
+    
+    // Inserisci i contenuti nei rispettivi pannelli
+    document.getElementById('left-config-content').innerHTML = leftHtml;
+    document.getElementById('right-config-content').innerHTML = rightHtml;
+    document.getElementById('diff-content').innerHTML = diffHtml;
+    
+    // Aggiungi lo scroll sincronizzato
+    setupSyncScroll();
+}
+
+function openCompareModal(sourcePath, comparePath, deviceName) {
+    // show loading status
+    showStatus('Preparing configuration comparison...', 'success');
+
+    Promise.all([
+        fetchBackupContent(sourcePath),
+        fetchBackupContent(comparePath)
+    ]).then(([sourceData, compareData]) => {
+        if (sourceData.success && compareData.success) {
+            // Estrai i nomi dei file dai percorsi
+            const sourceName = sourcePath.split('/').pop();
+            const compareName = comparePath.split('/').pop();
+            
+            // Imposta i titoli
+            deviceName.textContent = deviceName;
+            document.getElementById('compare-title').textContent = `${sourceName} vs ${compareName}`;
+            document.getElementById('left-panel-title').textContent = sourceName;
+            document.getElementById('right-panel-title').textContent = compareName;
+            
+            // Confronta i contenuti
+            compareConfigurations(sourceData.content, compareData.content);
+            
+            // Mostra la modal
+            document.getElementById('config-compare-modal').style.display = 'block';
+            document.addEventListener('keydown', handleEscCompareModal);
+        } else {
+            showStatus('Error loading configurations for comparison', 'error');
+        }
+    }).catch(error => {
+        showStatus('Comparison error: ' + error, 'error');
+    });
+}
+
+// Modifica la funzione startConfigurationCompare per utilizzare la nuova modal
 function startConfigurationCompare() {
-    alert('Ciumbia!');
+    const compareConfirmBtn = document.getElementById('compare-confirm-btn');
+
+    const sourcePath = compareConfirmBtn.getAttribute('source-file-path');
+    const comparePath = compareConfirmBtn.getAttribute('compare-file-path');
+    const deviceName = compareConfirmBtn.getAttribute('compare-device-name');
+    
+    if (!sourcePath || !comparePath) {
+        showStatus('Please select both configurations to compare', 'error');
+        return;
+    }
+    
+    closeCompareSelectModal();
+    openCompareModal(sourcePath, comparePath, deviceName);
 }
 
 function exportAllBackup() {
@@ -978,6 +1117,11 @@ function closeCompareSelectModal() {
     document.removeEventListener('keydown', handleEscCompareSelectModal);
 }
 
+function closeCompareModal() {
+    document.getElementById('config-compare-modal').style.display = 'none';
+    document.removeEventListener('keydown', handleEscCompareModal);
+}
+
 function openEditModal(index) {
     fetch('/get_switches')
     .then(response => response.json())
@@ -1101,8 +1245,6 @@ function colorLogLine(line) {
 
     return `<div class="log-line">${line}</div>`;
 }
-
-
 
 function openLogModal() {
     fetch('/get_full_log')
@@ -1383,20 +1525,17 @@ function setupModalCloseOnEsc() {
     });
 }
 
-
 function handleEscEditModal(event) {
     if (event.key === 'Escape') {
         closeEditModal();
     }
 }
 
-
 function handleEscLogModal(event) {
     if (event.key === 'Escape') {
         closeLogModal();
     }
 }
-
 
 function handleEscConfigModal(event) {
     if (event.key === 'Escape') {
@@ -1407,6 +1546,12 @@ function handleEscConfigModal(event) {
 function handleEscCompareSelectModal(event) {
     if (event.key === 'Escape') {
         closeCompareSelectModal();
+    }
+}
+
+function handleEscCompareModal(event) {
+    if (event.key === 'Escape') {
+        closeCompareModal();
     }
 }
 
