@@ -26,9 +26,10 @@ import ipaddress
 import re
 from markupsafe import escape
 from pathlib import Path
+import concurrent.futures
 
 
-__version__ = "1.4.0 alpha9"
+__version__ = "1.4.0 alpha10"
 
 __favicon__ = "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"
 
@@ -948,7 +949,7 @@ def backup_switch(params: dict) -> dict:
         }
 
 
-
+"""
 @app.route('/backup_all_switches', methods=['POST'])
 @login_required
 def backup_all_switches():
@@ -1002,6 +1003,124 @@ def backup_all_switches():
                 'message': result.get('message', ''),
                 'filename': result.get('filename', '')
             })
+
+        success_count = sum(1 for r in results if r['success'])
+        completion_msg = f"Backup completed. Success: {success_count}/{len(switches_data)}"
+        logger.info(completion_msg)
+        
+        return jsonify({
+            'success': True,
+            'count': success_count,
+            'total': len(switches_data),
+            'results': results
+        })
+
+    except Exception as e:
+        error_msg = f"Unexpected error in backup_all_switches: {str(e)}"
+        logger.error(error_msg, exc_info=True)
+        return jsonify({
+            'success': False,
+            'message': error_msg,
+            'count': 0,
+            'total': 0,
+            'results': []
+        }), 500
+"""
+
+@app.route('/backup_all_switches', methods=['POST'])
+@login_required
+def backup_all_switches():
+    try:
+        logger.info("Starting backup process for all devices")
+        
+        # Numero massimo di backup paralleli (hardcoded)
+        MAX_CONCURRENT_BACKUPS= 100
+        MAX_PARALLEL_BACKUPS = MAX_CONCURRENT_BACKUPS
+        
+        # Carica gli switch con controllo errori rinforzato
+        try:
+            switches_data = load_switches()
+            if not isinstance(switches_data, list):
+                error_msg = "Invalid switches data format"
+                logger.error(error_msg)
+                return jsonify({
+                    'success': False,
+                    'message': error_msg,
+                    'count': 0,
+                    'total': 0,
+                    'results': []
+                })
+        except Exception as e:
+            error_msg = f"Failed to load switches: {str(e)}"
+            logger.error(error_msg)
+            return jsonify({
+                'success': False,
+                'message': error_msg,
+                'count': 0,
+                'total': 0,
+                'results': []
+            })
+
+        if not switches_data:
+            logger.warning("No devices configured for backup")
+            return jsonify({
+                'success': False,
+                'message': 'No devices configured',
+                'count': 0,
+                'total': 0,
+                'results': []
+            })
+
+        results = []
+        
+        # Funzione helper per eseguire un singolo backup
+        def backup_single_switch(index):
+            try:
+                switch = switches_data[index]
+                progress_msg = f"Processing device {index+1}/{len(switches_data)}: {switch['hostname']}"
+                logger.info(progress_msg)
+                
+                result = backup_switch({'index': index})
+                return {
+                    'success': result.get('success', False),
+                    'hostname': switch['hostname'],
+                    'ip': switch['ip'],
+                    'message': result.get('message', ''),
+                    'filename': result.get('filename', '')
+                }
+            except Exception as e:
+                logger.error(f"Error processing switch {index}: {str(e)}")
+                return {
+                    'success': False,
+                    'hostname': switches_data[index]['hostname'],
+                    'ip': switches_data[index]['ip'],
+                    'message': str(e),
+                    'filename': ''
+                }
+
+        # Esegui i backup in parallelo
+        with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_PARALLEL_BACKUPS) as executor:
+            # Invia tutti i lavori al thread pool
+            future_to_index = {
+                executor.submit(backup_single_switch, i): i 
+                for i in range(len(switches_data))
+            }
+            
+            # Raccogli i risultati man mano che completano
+            for future in concurrent.futures.as_completed(future_to_index):
+                index = future_to_index[future]
+                try:
+                    result = future.result()
+                    results.append(result)
+                except Exception as e:
+                    logger.error(f"Error getting result for switch {index}: {str(e)}")
+                    results.append({
+                        'success': False,
+                        'hostname': switches_data[index]['hostname'],
+                        'ip': switches_data[index]['ip'],
+                        'message': str(e),
+                        'filename': ''
+                    })
 
         success_count = sum(1 for r in results if r['success'])
         completion_msg = f"Backup completed. Success: {success_count}/{len(switches_data)}"

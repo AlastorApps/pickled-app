@@ -1118,6 +1118,16 @@ function openCompareModal(sourcePath, comparePath, deviceName) {
         if (leftFileEl) leftFileEl.textContent = sourcePath.split('/').pop();
         if (rightFileEl) rightFileEl.textContent = comparePath.split('/').pop();
         
+        const compareExportLeftBtn = document.getElementById('compare-export-left-btn');
+        const compareExportRightBtn = document.getElementById('compare-export-right-btn');
+        const sourceFileLabel = document.getElementById('source-file-path');
+        const compareFileLabel = document.getElementById('compare-file-path');
+
+        compareExportLeftBtn.setAttribute('file-path', sourcePath);
+        compareExportRightBtn.setAttribute('file-path', comparePath);
+        sourceFileLabel.textContent = sourcePath.split('/').pop();
+        compareFileLabel.textContent = comparePath.split('/').pop();
+
         // Confronta i contenuti
         compareConfigurations(sourceData.content, compareData.content);
         
@@ -1217,6 +1227,22 @@ function exportBackup() {
 
     showStatus('Backup exported successfully', 'success');
     addToLog(`Exported backup: ${filename}`);
+}
+
+function exportThisBackup(buttonElement) {
+    const filePath = buttonElement.getAttribute('file-path');
+
+    if (!filePath) {
+        console.error('File path not found.');
+        return;
+    }
+
+    const a = document.createElement('a');
+    a.href = filePath;
+    a.download = filePath.split('/').pop();
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
 }
 
 function deleteBackup() {

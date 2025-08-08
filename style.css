@@ -1705,3 +1705,19 @@ footer {
 }
 
 /* FINE STATO DEI FILTRI ANCORA PIU' VISIBLE!!!!!!!!!! */
+
+.compare-confirm-btn {
+    background-color: #2d8371;
+}
+
+.compare-confirm-btn:hover {
+    background-color: #4CAF50;
+}
+
+.compare-export-btn {
+    background-color: #2d8371;
+}
+
+.compare-export-btn:hover {
+    background-color: #4CAF50;
+}
