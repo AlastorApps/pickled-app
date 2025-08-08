@@ -1,4 +1,4 @@
-![PICKLED logo](https://raw.githubusercontent.com/AlastorApps/pickled/refs/heads/main/static/PICKLED_logo320.png)
+<img src="https://raw.githubusercontent.com/AlastorApps/pickled/refs/heads/main/static/PICKLED_logo_github.png" alt="PICKLED logo" width="320" height="320">
 
 
 
