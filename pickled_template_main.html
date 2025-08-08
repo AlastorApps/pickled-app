@@ -16,7 +16,7 @@
         <div class="status-container">
             <div id="status-message" class="status"></div>
         </div>
-        
+
         <div class="app-container">
             <div class="left-panel">
                 <h2>Add device</h2>
@@ -70,7 +70,7 @@
                     PICKLED v{{ version }}<br/>Network Configuration Manager
                 </div>
             </div>
-            
+
             <div class="center-panel">
                 <div class="device-list-background"></div>
 
@@ -79,7 +79,7 @@
                         <h2 style="margin: 0;">Device List</h2>
                         <div class="search-buttons-container">
                             <div style="position: relative;">
-                                <input type="text" id="search-input" placeholder="Search devices..." 
+                                <input type="text" id="search-input" placeholder="Search devices..."
                                 style="padding: 5px 30px 5px 10px; border: 1px solid #ddd; border-radius: 4px; height: 30px; margin-right: 10px;"
                                 oninput="filterSwitches(); toggleSearchIcon()">
                                 <i id="search-icon" class="fas fa-search" style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #777; cursor: pointer;" onclick="clearSearch()"></i>
@@ -96,7 +96,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="switch-table-container">
                     <table class="switch-table">
                         <thead>
@@ -339,12 +339,6 @@
                             <div class="compare-content" id="left-config-content"></div>
                         </div>
 
-                        <!-- Pannello centrale - Differenze -->
-                        <div class="compare-diff">
-                            <div class="diff-header">Diff</div>
-                            <div class="diff-content" id="diff-content"></div>
-                        </div>
-
                         <!-- Pannello destro - Configurazione da confrontare -->
                         <div class="compare-panel">
                             <div class="compare-header">
@@ -432,7 +426,7 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/diff/5.0.0/diff.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jsdiff/4.0.2/diff.min.js"></script>
-        
+
         <script>
             {pickled_js_template}
         </script>

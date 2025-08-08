@@ -786,6 +786,7 @@ function fetchBackupContent(filepath) {
     }).then(response => response.json());
 }
 
+/*
 function setupSyncScroll() {
     const leftPanel = document.getElementById('left-config-content');
     const rightPanel = document.getElementById('right-config-content');
@@ -803,11 +804,24 @@ function setupSyncScroll() {
     };
     
     // Aggiungi gli event listeners per lo scroll
-    //leftPanel.addEventListener('scroll', () => syncScroll(leftPanel, rightPanel));
     leftPanel.addEventListener('scroll', () => syncScroll(leftPanel, rightPanel, diffPanel));
-    //rightPanel.addEventListener('scroll', () => syncScroll(rightPanel, leftPanel));
     rightPanel.addEventListener('scroll', () => syncScroll(rightPanel, leftPanel, diffPanel));
     diffPanel.addEventListener('scroll', () => syncScroll(diffPanel, leftPanel, rightPanel));
+}*/
+
+function setupSyncScroll() {
+    const leftPanel = document.getElementById('left-config-content');
+    const rightPanel = document.getElementById('right-config-content');
+    
+    const syncScroll = (source, target) => {
+        if (source.syncing) return;
+        source.syncing = true;
+        target.scrollTop = source.scrollTop;
+        setTimeout(() => { source.syncing = false; }, 1);
+    };
+    
+    leftPanel.addEventListener('scroll', () => syncScroll(leftPanel, rightPanel));
+    rightPanel.addEventListener('scroll', () => syncScroll(rightPanel, leftPanel));
 }
 
 /*
@@ -869,6 +883,7 @@ function compareConfigurations(sourceContent, compareContent) {
     setupSyncScroll();
 }*/
 
+/*
 function compareConfigurations(sourceContent, compareContent) {
     // Dividi i contenuti in righe
     const sourceLines = sourceContent.split('\n');
@@ -964,6 +979,71 @@ function compareConfigurations(sourceContent, compareContent) {
     if (currentCompareSearchTerm) {
         highlightSearchMatches(currentCompareSearchTerm);
     }
+}*/
+
+function compareConfigurations(sourceContent, compareContent) {
+    const diff = Diff.diffLines(sourceContent, compareContent);
+    
+    let stats = {
+        added: 0,
+        removed: 0,
+        unchanged: 0,
+        total: 0
+    };
+    
+    let leftHtml = '';
+    let rightHtml = '';
+    let leftLineNum = 1;
+    let rightLineNum = 1;
+    
+    diff.forEach(part => {
+        const lines = part.value.split('\n');
+        lines.pop();
+        
+        if (part.added) {
+            stats.added += lines.length;
+            lines.forEach(line => {
+                const visible = currentCompareFilters.showAdded ? '' : 'hidden-line';
+                rightHtml += `<div class="config-line added-line ${visible}" data-line-type="added">
+                    <span class="line-number">${rightLineNum++}</span>
+                    <span class="line-content">${escapeHtml(line)}</span>
+                </div>`;
+            });
+        } else if (part.removed) {
+            stats.removed += lines.length;
+            lines.forEach(line => {
+                const visible = currentCompareFilters.showRemoved ? '' : 'hidden-line';
+                leftHtml += `<div class="config-line removed-line ${visible}" data-line-type="removed">
+                    <span class="line-number">${leftLineNum++}</span>
+                    <span class="line-content">${escapeHtml(line)}</span>
+                </div>`;
+            });
+        } else {
+            stats.unchanged += lines.length;
+            lines.forEach(line => {
+                const visible = currentCompareFilters.showUnchanged ? '' : 'hidden-line';
+                leftHtml += `<div class="config-line same-line ${visible}" data-line-type="unchanged">
+                    <span class="line-number">${leftLineNum++}</span>
+                    <span class="line-content">${escapeHtml(line)}</span>
+                </div>`;
+                rightHtml += `<div class="config-line same-line ${visible}" data-line-type="unchanged">
+                    <span class="line-number">${rightLineNum++}</span>
+                    <span class="line-content">${escapeHtml(line)}</span>
+                </div>`;
+            });
+        }
+    });
+    
+    stats.total = stats.added + stats.removed + stats.unchanged;
+    
+    document.getElementById('left-config-content').innerHTML = leftHtml;
+    document.getElementById('right-config-content').innerHTML = rightHtml;
+    updateCompareStats(stats);
+    setupSyncScroll();
+    
+    if (currentCompareSearchTerm) {
+        highlightSearchMatches(currentCompareSearchTerm);
+    }
 }
 
 function updateCompareStats(stats) {
@@ -1049,6 +1129,7 @@ function addCompareFilters() {
     }
 }
 
+/*
 function applyCompareFilters() {
     const leftPanel = document.getElementById('left-config-content');
     const rightPanel = document.getElementById('right-config-content');
@@ -1070,6 +1151,32 @@ function applyCompareFilters() {
         added: 0,
         removed: 0,
         changed: 0,
+        unchanged: 0,
+        total: 0
+    };
+    
+    document.querySelectorAll('.config-line').forEach(line => {
+        if (line.style.display !== 'none') {
+            const lineType = line.getAttribute('data-line-type');
+            stats[lineType]++;
+            stats.total++;
+        }
+    });
+    
+    updateCompareStats(stats);
+}*/
+
+function applyCompareFilters() {
+    document.querySelectorAll('.config-line').forEach(line => {
+        const lineType = line.getAttribute('data-line-type');
+        const shouldShow = currentCompareFilters[`show${lineType.charAt(0).toUpperCase() + lineType.slice(1)}`];
+        line.style.display = shouldShow ? '' : 'none';
+    });
+    
+    // Aggiorna stats
+    const stats = {
+        added: 0,
+        removed: 0,
         unchanged: 0,
         total: 0
     };

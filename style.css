@@ -1087,13 +1087,12 @@ footer {
 /*                       INIZIO STILI TABELLA COMPARE                                           */
 /* ============================================================================================ */
 
-/* ======================== INIZIO STILI TABELLA COMPARE ======================== */
+/* Sostituisci tutta la sezione compare con questo: */
 .compare-container {
     display: flex;
     width: 100%;
     height: 100%;
-    overflow: hidden;
-    background: #f5f5f5;
+    gap: 10px;
 }
 
 .compare-panel {
@@ -1101,170 +1100,89 @@ footer {
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    border: 1px solid var(--gray-medium);
+    border: 1px solid #ddd;
     border-radius: 4px;
     background: #fff;
-    position: relative;
 }
 
-.compare-header, .diff-header {
+.compare-header {
     padding: 8px 12px;
     background: var(--petrol);
     color: #fff;
-    border-bottom: 1px solid var(--petrol-dark);
+    font-weight: bold;
     display: flex;
-    align-items: center;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-}
-
-.diff-header {
-    justify-content: center;
-    padding: 8px;
-}
-
-.compare-info {
-    font-size: 11px;
-    opacity: .9;
-    background: transparent;
-    padding: 2px 6px;
-    border-radius: 3px;
-}
-
-.compare-content, .diff-content {
-    flex: 1;
-    overflow-y: auto;
-    font-size: 12px;
-    line-height: 1.4;
+    justify-content: space-between;
 }
 
 .compare-content {
-    overflow-x: auto;
-    font-family: 'Consolas','Liberation Mono',monospace;
-    white-space: pre;
+    flex: 1;
+    overflow-y: auto;
+    font-family: 'Consolas', monospace;
+    font-size: 13px;
+    line-height: 1.4;
     tab-size: 4;
-}
-
-.diff-content {
-    font-family: monospace;
-    text-align: center;
-    background: #f8f8f8;
-}
-
-.compare-diff {
-    width: 40px;
-    min-width: 40px;
-    display: flex;
-    flex-direction: column;
-    background: #f8f8f8;
-    border-left: 1px solid #e0e0e0;
-    border-right: 1px solid #e0e0e0;
 }
 
 .config-line {
     display: flex;
-    align-items: center;
-    min-height: 18px;
-    padding: 1px 0;
-    border-bottom: 1px solid rgba(0,0,0,.05);
+    padding: 2px 0;
 }
 
 .line-number {
-    display: inline-block;
     width: 30px;
-    color: #777;
     text-align: right;
-    margin-right: 8px;
+    padding-right: 8px;
+    color: #777;
     user-select: none;
     flex-shrink: 0;
-    background: transparent;
 }
 
 .line-content {
-    flex-grow: 1;
     white-space: pre-wrap;
-    word-break: break-all;
+    word-break: break-word;
 }
 
+.added-line { background: #e6ffed; }
+.removed-line { background: #ffebeb; }
 .same-line { background: #f8f8f8; }
-.diff-line { background: #fff9f9; }
-.added-line { background: #f0fff0; }
-.removed-line { background: #fff0f0; }
-.changed-line { background: #fffceb; }
-
-.diff-marker {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 20px;
-    height: 18px;
-    font-size: 10px;
-    font-weight: bold;
-    color: #fff;
-    margin: 0 auto;
-    border-radius: 3px;
-}
-
-.diff-added { background: #4caf50; }
-.diff-removed { background: #f44336; }
-.diff-changed { background: #ffc107; }
-.diff-empty { color: transparent; }
-.diff-empty::after { content: "="; color: #999; }
-
-.highlighted-line { background: #fffacd !important; }
-.search-match { background: yellow; color: #000; font-weight: bold; }
-
-.compare-stats, .compare-search, .compare-filters {
-    position: absolute;
-    z-index: 20;
-    background: #fff;
-    border-radius: 4px;
-    box-shadow: 0 2px 4px rgba(0,0,0,.1);
-}
+.hidden-line { display: none; }
 
 .compare-stats {
-    bottom: 10px;
-    right: 10px;
-    background: rgba(0,0,0,.7);
-    color: #fff;
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+    background: rgba(0,0,0,0.8);
+    color: white;
     padding: 8px 12px;
+    border-radius: 4px;
     font-size: 12px;
 }
 
 .compare-search {
-    top: 10px;
-    right: 10px;
+    position: absolute;
+    top: 15px;
+    right: 15px;
     display: flex;
-    align-items: center;
-    padding: 4px;
+    gap: 5px;
 }
 
 .compare-search input {
+    padding: 5px 10px;
     border: 1px solid #ddd;
-    padding: 4px 8px;
-    border-radius: 3px;
-    font-size: 12px;
-    margin-right: 4px;
-}
-
-.compare-search button {
-    background: var(--petrol);
-    color: #fff;
-    border: none;
-    border-radius: 3px;
-    padding: 4px 8px;
-    font-size: 12px;
-    cursor: pointer;
+    border-radius: 4px;
 }
 
 .compare-filters {
-    top: 50px;
-    right: 10px;
+    position: absolute;
+    top: 60px;
+    right: 15px;
+    background: white;
     padding: 8px;
+    border-radius: 4px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 5px;
 }
 
 .compare-filters label {
@@ -1274,10 +1192,16 @@ footer {
     cursor: pointer;
 }
 
-.compare-filters input { margin-right: 6px; }
-/*.hidden-line { display: none !important; }*/
-/* ========================= FINE STILI TABELLA COMPARE ========================= */
+.highlighted-line {
+    background: #fffacd !important;
+}
 
+.search-match {
+    background: yellow;
+    color: black;
+    font-weight: bold;
+    padding: 0 2px;
+}
 
 /* ============================================================================================ */
 /*                       FINE STILI TABELLA COMPARE                                             */
