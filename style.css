@@ -1326,3 +1326,274 @@ footer {
 /* ============================================================================================ */
 /*                       FINE STILI TABELLA COMPARE                                             */
 /* ============================================================================================ */
+
+/* Compare Modal */
+.compare-container {
+    display: flex;
+    height: 100%;
+    gap: 0;
+    border-top: 1px solid #ddd;
+    border-bottom: 1px solid #ddd;
+}
+
+.compare-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+}
+
+.compare-content {
+    flex: 1;
+    overflow-y: auto;
+    font-family: 'Consolas', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    background: white;
+    padding: 10px;
+}
+
+/* Status Bar */
+.compare-statusbar {
+    display: flex;
+    padding: 8px 15px;
+    background: #f5f5f5;
+    border-top: 1px solid #ddd;
+    font-size: 13px;
+}
+
+.statusbar-section {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-right: 20px;
+}
+
+.statusbar-label {
+    font-weight: bold;
+    color: #555;
+}
+
+/* Line Styles */
+.config-line {
+    display: flex;
+    white-space: pre-wrap;
+    word-break: break-word;
+    padding: 2px 0;
+}
+
+.line-number {
+    width: 40px;
+    text-align: right;
+    padding-right: 10px;
+    color: #999;
+    user-select: none;
+    flex-shrink: 0;
+}
+
+.line-content {
+    flex-grow: 1;
+}
+
+.added-line { background: #e6ffed; }
+.removed-line { background: #ffebeb; }
+.same-line { background: white; }
+.hidden-line { opacity: 0.3; } /* Changed from display:none to opacity */
+
+.highlighted-line {
+    background: #fffacd !important;
+}
+
+.search-match {
+    background: yellow;
+    color: black;
+    font-weight: bold;
+}
+
+/* Controls */
+.compare-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-left: 20px;
+}
+
+.compare-search {
+    display: flex;
+    align-items: center;
+}
+
+.compare-search input {
+    padding: 5px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    width: 200px;
+}
+
+.compare-filters {
+    display: flex;
+    gap: 10px;
+}
+
+.compare-filters label {
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 3px;
+}
+
+.compare-filters label:hover {
+    background: rgba(255,255,255,0.1);
+}
+
+.stats-value {
+    font-family: 'Consolas', monospace;
+    font-size: 13px;
+    min-width: 50px;
+    display: inline-block;
+    text-align: right;
+}
+
+.compare-statusbar {
+    display: flex;
+    padding: 8px 15px;
+    background: #f5f5f5;
+    border-top: 1px solid #ddd;
+    font-size: 13px;
+}
+
+.statusbar-section {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: 20px;
+}
+
+.statusbar-label {
+    font-weight: bold;
+    color: #555;
+    min-width: 60px;
+}
+
+.hidden-line {
+    opacity: 0.3;
+}
+
+.config-line {
+    display: flex;
+    white-space: pre-wrap;
+    transition: opacity 0.2s ease;
+}
+
+.line-number {
+    width: 40px;
+    text-align: right;
+    padding-right: 10px;
+    color: #999;
+    user-select: none;
+}
+
+/* Compare Container */
+.compare-container {
+    display: flex;
+    height: 100%;
+    gap: 10px;
+}
+
+.compare-panel-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0; /* Fix per flexbox overflow */
+}
+
+.compare-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid #ddd;
+    border-radius: 4px 4px 0 0;
+    background: white;
+}
+
+.compare-content {
+    flex: 1;
+    overflow-y: auto;
+    font-family: 'Consolas', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    padding: 10px;
+}
+
+/* Panel Status Bars */
+.panel-statusbar {
+    padding: 8px 10px;
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.status-label {
+    font-weight: bold;
+    color: #555;
+    min-width: 60px;
+}
+
+.stats-value {
+    font-family: 'Consolas', monospace;
+    min-width: 50px;
+    text-align: right;
+}
+
+.stats-value.added {
+    color: #4caf50;
+}
+
+.stats-value.removed {
+    color: #f44336;
+}
+
+/* Global Status Bar */
+.global-statusbar {
+    padding: 8px 15px;
+    background: #f0f0f0;
+    border-top: 1px solid #ddd;
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* Line Styles */
+.config-line {
+    display: flex;
+    white-space: pre-wrap;
+    padding: 2px 0;
+}
+
+.line-number {
+    width: 40px;
+    text-align: right;
+    padding-right: 10px;
+    color: #999;
+    user-select: none;
+    flex-shrink: 0;
+}
+
+.added-line { background: #e6ffed; }
+.removed-line { background: #ffebeb; }
+.hidden-line { opacity: 0.3; }
+
+.highlighted-line {
+    background: #fffacd !important;
+}
+
+.search-match {
+    background: yellow;
+    color: black;
+    font-weight: bold;
+}

@@ -321,57 +321,66 @@
 
         <!-- Modal con il confronto delle configurazioni -->
         <div id="config-compare-modal" class="modal" style="z-index:1020">
-            <div class="modal-content" style="width: 95%; max-width: 1600px; height: 90vh;">
+            <div class="modal-content" style="width: 95%; max-width: 1600px; height: 90vh; display: flex; flex-direction: column;">
                 <div class="modal-header">
                     <div class="modal-title">
-                        Configuration comparison of <span id="comparison-switch-name"></span>
-                        <div class="compare-controls">
-                            <div class="compare-search">
-                                <input type="text" id="compare-search-input" placeholder="Search in config...">
-                                <button onclick="highlightSearchMatches(document.getElementById('compare-search-input').value)">
-                                <i class="fas fa-search"></i>
-                                </button>
-                            </div>
-                            <div class="compare-filters">
-                                <label>
-                                    <input type="checkbox" id="filter-added" checked onchange="toggleFilter('added')">
-                                    <span style="color:#4caf50">Added</span>
-                                </label>
-                                <label>
-                                    <input type="checkbox" id="filter-removed" checked onchange="toggleFilter('removed')">
-                                    <span style="color:#f44336">Removed</span>
-                                </label>
-                                <label>
-                                    <input type="checkbox" id="filter-unchanged" onchange="toggleFilter('unchanged')">
-                                    <span style="color:#777">Unchanged</span>
-                                </label>
-                            </div>
-                        </div>
+                    Configuration comparison of <span id="comparison-switch-name"></span>
                     </div>
-                    <div class="compare-stats">
-                        <span id="stats-lines">0 lines</span>
-                        <span id="stats-added" style="color:#4caf50">+0</span>
-                        <span id="stats-removed" style="color:#f44336">-0</span>
+                    <div class="compare-controls">
+                        <div class="compare-search">
+                            <input type="text" id="compare-search-input" placeholder="Search in config..." 
+                            onkeypress="if(event.key === 'Enter') highlightSearchMatches(this.value)">
+                            <button onclick="highlightSearchMatches(document.getElementById('compare-search-input').value)">
+                            <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                        <div class="compare-filters">
+                            <label title="Show added lines">
+                                <input type="checkbox" id="filter-added" checked onchange="toggleFilter('added')">
+                                <i class="fas fa-plus" style="color:#4caf50"></i>
+                            </label>
+                            <label title="Show removed lines">
+                                <input type="checkbox" id="filter-removed" checked onchange="toggleFilter('removed')">
+                                <i class="fas fa-minus" style="color:#f44336"></i>
+                            </label>
+                            <label title="Show unchanged lines">
+                                <input type="checkbox" id="filter-unchanged" checked onchange="toggleFilter('unchanged')">
+                                <i class="fas fa-equals" style="color:#777"></i>
+                            </label>
+                        </div>
                     </div>
                     <span class="close-btn" onclick="closeCompareModal()">&times;</span>
                 </div>
-                <div class="modal-body" style="height: calc(100% - 60px);">
+                <div class="modal-body" style="flex: 1; overflow: hidden;">
                     <div class="compare-container">
                         <!-- Left Panel -->
-                        <div class="compare-panel">
-                            <div class="compare-header">
-                                <span id="left-file-info"></span>
+                        <div class="compare-panel-container">
+                            <div class="compare-panel">
+                                <div class="compare-content" id="left-config-content"></div>
                             </div>
-                            <div class="compare-content" id="left-config-content"></div>
+                            <div class="panel-statusbar">
+                                <span class="status-label">Original:</span>
+                                <span class="stats-value" id="stats-left-lines">0 lines</span>
+                                <span class="stats-value removed" id="stats-left-removed">-0</span>
+                            </div>
                         </div>
-
                         <!-- Right Panel -->
-                        <div class="compare-panel">
-                            <div class="compare-header">
-                                <span id="right-file-info"></span>
+                        <div class="compare-panel-container">
+                            <div class="compare-panel">
+                                <div class="compare-content" id="right-config-content"></div>
                             </div>
-                            <div class="compare-content" id="right-config-content"></div>
+                            <div class="panel-statusbar">
+                                <span class="status-label">Modified:</span>
+                                <span class="stats-value" id="stats-right-lines">0 lines</span>
+                                <span class="stats-value added" id="stats-right-added">+0</span>
+                            </div>
                         </div>
+                    </div>
+                </div>
+                <!-- Global Status Bar -->
+                <div class="global-statusbar">
+                    <div id="stats-matches">
+                    <i class="fas fa-search"></i> <span>0 matches</span>
                     </div>
                 </div>
             </div>
