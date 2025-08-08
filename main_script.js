@@ -10,7 +10,6 @@ let currentCompareSearchTerm = '';
 let currentCompareFilters = {
     showAdded: true,
     showRemoved: true,
-    showChanged: true,
     showUnchanged: true
 };
 
@@ -809,6 +808,22 @@ function setupSyncScroll() {
     diffPanel.addEventListener('scroll', () => syncScroll(diffPanel, leftPanel, rightPanel));
 }*/
 
+/*
+function setupSyncScroll() {
+    const leftPanel = document.getElementById('left-config-content');
+    const rightPanel = document.getElementById('right-config-content');
+    
+    const syncScroll = (source, target) => {
+        if (source.syncing) return;
+        source.syncing = true;
+        target.scrollTop = source.scrollTop;
+        setTimeout(() => { source.syncing = false; }, 1);
+    };
+    
+    leftPanel.addEventListener('scroll', () => syncScroll(leftPanel, rightPanel));
+    rightPanel.addEventListener('scroll', () => syncScroll(rightPanel, leftPanel));
+}*/
+
 function setupSyncScroll() {
     const leftPanel = document.getElementById('left-config-content');
     const rightPanel = document.getElementById('right-config-content');
@@ -981,6 +996,7 @@ function compareConfigurations(sourceContent, compareContent) {
     }
 }*/
 
+/*
 function compareConfigurations(sourceContent, compareContent) {
     const diff = Diff.diffLines(sourceContent, compareContent);
     
@@ -1044,8 +1060,69 @@ function compareConfigurations(sourceContent, compareContent) {
     if (currentCompareSearchTerm) {
         highlightSearchMatches(currentCompareSearchTerm);
     }
+}*/
+
+function compareConfigurations(sourceContent, compareContent) {
+    const diff = Diff.diffLines(sourceContent, compareContent);
+    
+    let stats = {
+        added: 0,
+        removed: 0,
+        unchanged: 0,
+        total: 0
+    };
+    
+    let leftHtml = '';
+    let rightHtml = '';
+    let leftLineNum = 1;
+    let rightLineNum = 1;
+    
+    diff.forEach(part => {
+        const lines = part.value.split('\n');
+        lines.pop();
+        
+        if (part.added) {
+            stats.added += lines.length;
+            lines.forEach(line => {
+                rightHtml += buildLineHtml('added', rightLineNum++, line);
+            });
+        } else if (part.removed) {
+            stats.removed += lines.length;
+            lines.forEach(line => {
+                leftHtml += buildLineHtml('removed', leftLineNum++, line);
+            });
+        } else {
+            stats.unchanged += lines.length;
+            lines.forEach(line => {
+                leftHtml += buildLineHtml('unchanged', leftLineNum++, line);
+                rightHtml += buildLineHtml('unchanged', rightLineNum++, line);
+            });
+        }
+    });
+    
+    stats.total = stats.added + stats.removed + stats.unchanged;
+    
+    document.getElementById('left-config-content').innerHTML = leftHtml;
+    document.getElementById('right-config-content').innerHTML = rightHtml;
+    updateCompareStats(stats);
+    setupSyncScroll();
+    
+    if (currentCompareSearchTerm) {
+        highlightSearchMatches(currentCompareSearchTerm);
+    }
 }
 
+function buildLineHtml(type, lineNum, content) {
+    const show = document.getElementById(`filter-${type}`)?.checked ?? true;
+    return `
+        <div class="config-line ${type}-line ${show ? '' : 'hidden-line'}" data-line-type="${type}">
+            <span class="line-number">${lineNum}</span>
+            <span class="line-content">${escapeHtml(content)}</span>
+        </div>
+    `;
+}
+
+/*
 function updateCompareStats(stats) {
     const statsHtml = `
         <div><strong>Total lines:</strong> ${stats.total}</div>
@@ -1063,6 +1140,30 @@ function updateCompareStats(stats) {
         document.querySelector('.compare-container').appendChild(statsDiv);
     }
     statsDiv.innerHTML = statsHtml;
+}*/
+
+function updateCompareStats(stats) {
+    document.getElementById('stats-lines').textContent = `${stats.total} lines`;
+    document.getElementById('stats-added').textContent = `+${stats.added}`;
+    document.getElementById('stats-removed').textContent = `-${stats.removed}`;
+}
+
+function toggleFilter(type) {
+    const show = document.getElementById(`filter-${type}`).checked;
+    document.querySelectorAll(`.config-line[data-line-type="${type}"]`).forEach(line => {
+        line.style.display = show ? '' : 'none';
+    });
+    updateVisibleStats();
+}
+
+function updateVisibleStats() {
+    const stats = {
+        added: document.querySelectorAll('.added-line:not([style*="display: none"])').length,
+        removed: document.querySelectorAll('.removed-line:not([style*="display: none"])').length,
+        unchanged: document.querySelectorAll('.unchanged-line:not([style*="display: none"])').length
+    };
+    stats.total = stats.added + stats.removed + stats.unchanged;
+    updateCompareStats(stats);
 }
 
 function addCompareSearchBar() {
@@ -1192,6 +1293,7 @@ function applyCompareFilters() {
     updateCompareStats(stats);
 }
 
+/*
 function highlightSearchMatches(searchTerm) {
     // Rimuovi evidenziazioni precedenti
     document.querySelectorAll('.search-match').forEach(el => {
@@ -1229,6 +1331,39 @@ function highlightSearchMatches(searchTerm) {
     const firstMatch = document.querySelector('.highlighted-line');
     if (firstMatch) {
         firstMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}*/
+
+function highlightSearchMatches(searchTerm) {
+    currentCompareSearchTerm = searchTerm;
+    
+    // Remove previous highlights
+    document.querySelectorAll('.search-match').forEach(match => {
+        const parent = match.parentNode;
+        parent.textContent = parent.textContent;
+    });
+    
+    if (!searchTerm) return;
+    
+    const regex = new RegExp(escapeRegExp(searchTerm), 'gi');
+    let matchCount = 0;
+    
+    document.querySelectorAll('.line-content').forEach(content => {
+        const text = content.textContent;
+        const highlighted = text.replace(regex, match => {
+            matchCount++;
+            return `<span class="search-match">${match}</span>`;
+        });
+        if (highlighted !== text) {
+            content.innerHTML = highlighted;
+            content.closest('.config-line').classList.add('highlighted-line');
+        }
+    });
+    
+    // Update stats with match count
+    const statsElement = document.getElementById('stats-lines');
+    if (matchCount > 0) {
+        statsElement.innerHTML += ` <span style="color:yellow">(${matchCount} matches)</span>`;
     }
 }
 
