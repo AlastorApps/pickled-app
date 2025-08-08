@@ -1597,3 +1597,111 @@ footer {
     color: black;
     font-weight: bold;
 }
+
+/* Contenitore per search + filtri */
+.search-filters-container {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: rgba(255,255,255,0.1);
+    padding: 5px 10px;
+    border-radius: 4px;
+}
+
+/* Search Box */
+.compare-search {
+    display: flex;
+    align-items: center;
+    background: white;
+    border-radius: 4px;
+    padding: 0 8px;
+    height: 32px;
+}
+
+.compare-search input {
+    border: none;
+    padding: 0 8px;
+    width: 200px;
+    outline: none;
+    background: transparent;
+}
+
+.compare-search button {
+    background: transparent;
+    border: none;
+    color: #555;
+    cursor: pointer;
+    padding: 0 4px;
+}
+
+/* Filtri inline */
+.compare-filters-inline {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.compare-filters-inline label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.compare-filters-inline label:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+.compare-filters-inline input[type="checkbox"] {
+    display: none; /* Nascondi i checkbox nativi */
+}
+
+.compare-filters-inline i {
+    font-size: 14px;
+}
+
+/* Stile per checkbox selezionati */
+.compare-filters-inline input[type="checkbox"]:checked + i {
+    transform: scale(1.2);
+    filter: drop-shadow(0 0 2px rgba(0,0,0,0.3));
+}
+
+/* STATO DEI FILTRI ANCORA PIU' VISIBLE!!!!!!!!!! */
+
+/* Indicatore stato filtro disattivato */
+.compare-filters-inline input[type="checkbox"]:not(:checked) + i {
+    opacity: 0.5;
+    transform: scale(0.9);
+}
+
+/* Tooltip */
+.compare-filters-inline label {
+    position: relative;
+}
+
+.compare-filters-inline label::after {
+    content: attr(title);
+    position: absolute;
+    bottom: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.compare-filters-inline label:hover::after {
+    opacity: 1;
+}
+
+/* FINE STATO DEI FILTRI ANCORA PIU' VISIBLE!!!!!!!!!! */
