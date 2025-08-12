@@ -29,7 +29,7 @@ from pathlib import Path
 import concurrent.futures
 
 
-__version__ = "1.4.0 alpha10"
+__version__ = "1.4.0 beta1"
 
 __favicon__ = "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"
 
@@ -121,31 +121,42 @@ app.config.update(
 
 # Testing source for HTML template
 # Uncomment the following lines to read the HTML template from a file
+with open("pickled_template_login.html", "r", encoding="utf-8") as f:
+    HTML_TEMPLATE_LOGIN = f.read()
+
+
+
+
+
+# Testing source for HTML template
+# Uncomment the following lines to read the HTML template from a file
 with open("pickled_template_main.html", "r", encoding="utf-8") as f:
-    HTML_TEMPLATE = f.read()
+    HTML_TEMPLATE_MAIN = f.read()
 
 # Testing source for CSS stylesheet
 # Uncomment the following lines to read the CSS from a file
 with open("style.css", "r", encoding="utf-8") as f:
     STYLE_TEMPLATE = f.read()
 
-HTML_TEMP = HTML_TEMPLATE.replace("{pickled_style_template}", STYLE_TEMPLATE)
+HTML_TEMP = HTML_TEMPLATE_MAIN.replace("{pickled_style_template}", STYLE_TEMPLATE)
 
 # Testing source for JavaScript script
 # Uncomment the following lines to read the CSS from a file
 with open("main_script.js", "r", encoding="utf-8") as f:
     JS_TEMPLATE = f.read()
 
-HTML_TEMPLATE = HTML_TEMP.replace("{pickled_js_template}", JS_TEMPLATE)
+HTML_TEMPLATE_MAIN = HTML_TEMP.replace("{pickled_js_template}", JS_TEMPLATE)
 
 
 
 
 
 """
-HTML_TEMPLATE = r
+HTML_TEMPLATE_MAIN = r
 <!DOCTYPE html>
 """
+
+
 
 
 
@@ -370,187 +381,10 @@ def login():
     # Genera un nuovo token CSRF per il form
     csrf_token = generate_csrf()
     
-    return f'''
-<!DOCTYPE html>
-<html>
-<head>
-    <title>PICKLED - Login</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="icon" type="image/png" href="data:image/png;base64,{__favicon__}">
-    <style>
-        :root {{
-            --primary-light: #0f5350;  /* Verde chiaro */
-            --primary-main: #2d8371;   /* Verde medio */
-            --primary-dark: #aacf76;   /* Verde scuro */
-            --petrol: #02433e;        /* Verde petrolio */
-            --accent-color: #ff8a65;
-            --light-color: #f1f8e9;
-            --dark-color: #263238;
-        }}
-        
-        * {{
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }}
-        
-        body {{
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-dark) 100%);
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: var(--dark-color);
-        }}
-        
-        .login-container {{
-            background-color: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            width: 100%;
-            max-width: 400px;
-            padding: 40px;
-            text-align: center;
-            animation: fadeIn 0.5s ease-in-out;
-        }}
-        
-        @keyframes fadeIn {{
-            from {{ opacity: 0; transform: translateY(-20px); }}
-            to {{ opacity: 1; transform: translateY(0); }}
-        }}
-        
-        .logo {{
-            margin-bottom: 25px;
-            color: var(--petrol);
-        }}
-        
-        .logo i {{
-            font-size: 3.5rem;
-            margin-bottom: 10px;
-            color: var(--primary-dark);
-        }}
-        
-        .logo h1 {{
-            font-size: 1.8rem;
-            margin-bottom: 5px;
-        }}
-        
-        .logo p {{
-            font-size: 0.9rem;
-            color: #666;
-        }}
-        
-        .login-form {{
-            margin-top: 20px;
-        }}
-        
-        .input-group {{
-            margin-bottom: 20px;
-            position: relative;
-            text-align: left;
-        }}
-        
-        .input-group label {{
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: var(--petrol);
-        }}
-        
-        .input-group input {{
-            width: 100%;
-            padding: 12px 15px 12px 40px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 16px;
-            transition: all 0.3s;
-        }}
-        
-        .input-group input:focus {{
-            border-color: var(--primary-main);
-            box-shadow: 0 0 0 3px rgba(77, 184, 168, 0.2);
-            outline: none;
-        }}
-        
-        .input-icon {{
-    position: absolute;
-    left: 15px;
-    top: 70%;
-    transform: translateY(-50%);
-    color: var(--primary-main);
-    height: 1em;
-    line-height: 1;
-    display: flex;
-    align-items: center;
-        }}
-        
-        button {{
-            width: 100%;
-            padding: 14px;
-            background-color: var(--petrol);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin-top: 10px;
-        }}
-        
-        button:hover {{
-            background-color: var(--primary-dark);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 105, 92, 0.3);
-        }}
-        
+    current_date = datetime.now().strftime('%Y-%m-%d')
 
-        
-        .version {{
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            color: rgba(255, 255, 255, 0.9);
-            font-size: 0.7rem;
-        }}
-    </style>
-</head>
-<body>
-    <div class="login-container">
-        <div class="logo">
-            <!-- <i class="fas fa-leaf"></i> -->
-            <img src="data:image/png;base64,{__pickledlogo__}">
-            <!-- <h1>PICKLED</h1> -->
-            <p>Platform for Instant Config Keep & Lightweight Export Daemon</p>
-        </div>
-        
-        <form method="post" action="/login" class="login-form">
-            <input type="hidden" name="csrf_token" value="{csrf_token}">
-            
-            <div class="input-group">
-                <label for="username">Username</label>
-                <i class="fas fa-user input-icon"></i>
-                <input type="text" id="username" name="username" placeholder="Your username goes here" required>
-            </div>
-            
-            <div class="input-group">
-                <label for="password">Password</label>
-                <i class="fas fa-lock input-icon"></i>
-                <input type="password" id="password" name="password" placeholder="Please input your password" required>
-            </div>
-            
-            <button type="submit">
-                <i class="fas fa-sign-in-alt"></i> Accedi
-            </button>
-        </form>
-        
-    </div>
-    
-    <div class="version">v{__version__}</div>
-</body>
-</html>
-'''
+    # return HTML_TEMPLATE_LOGIN
+    return render_template_string(HTML_TEMPLATE_LOGIN, csrf_token=csrf_token, current_date=current_date, favicon=__favicon__, pickledlogo=__pickledlogo__, version=__version__)
 
 
 @app.route('/logout')
@@ -562,7 +396,7 @@ def logout():
 @login_required
 def index():
     current_date = datetime.now().strftime('%Y-%m-%d')
-    return render_template_string(HTML_TEMPLATE, current_date=current_date, favicon=__favicon__, pickledlogo=__pickledlogo__, version=__version__)
+    return render_template_string(HTML_TEMPLATE_MAIN, current_date=current_date, favicon=__favicon__, version=__version__)
 
 def csrf_exempt_login_required(f):
     return csrf.exempt(login_required(f))

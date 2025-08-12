@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>PICKLED – Because broken routers don’t explain themselves</title>
+        <title>PICKLED – Network Configuration Manager</title>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css">
         <link rel="icon" type="image/png" href="data:image/png;base64,{{ favicon }}">
@@ -323,38 +323,49 @@
         <div id="config-compare-modal" class="modal" style="z-index:1020">
             <div class="modal-content" style="width: 95%; max-width: 1600px; height: 90vh; display: flex; flex-direction: column;">
                 <div class="modal-header">
-                    <div class="modal-title">
-                    Configuration comparison of <span id="comparison-switch-name"></span>
-                    </div>
-                    <div class="compare-controls">
-                        <!-- Contenitore unico per search + filtri -->
-                        <div class="search-filters-container">
-                            <!-- Search Box -->
-                            <div class="compare-search">
-                                <!--<input type="text" id="compare-search-input" placeholder="Search in config..." 
-                                onkeypress="if(event.key === 'Enter') highlightSearchMatches(this.value)">-->
-                                <input type="text" id="compare-search-input" placeholder="Search in config..." 
-                                oninput="highlightSearchMatches(this.value)">
-                            </div>
-
-                            <!-- Filtri inline -->
-                            <div class="compare-filters-inline">
-                                <label title="Show added lines">
-                                    <input type="checkbox" id="filter-added" checked onchange="toggleFilter('added')">
-                                    <i class="fas fa-plus" style="color:#4caf50"></i>
-                                </label>
-                                <label title="Show removed lines">
-                                    <input type="checkbox" id="filter-removed" checked onchange="toggleFilter('removed')">
-                                    <i class="fas fa-minus" style="color:#f44336"></i>
-                                </label>
-                                <label title="Show unchanged lines">
-                                    <input type="checkbox" id="filter-unchanged" checked onchange="toggleFilter('unchanged')">
-                                    <i class="fas fa-equals" style="color:#777"></i>
-                                </label>
-                            </div>
+                    <div class="left-header">
+                        <div class="modal-title">
+                        Configuration comparison of <span id="comparison-switch-name"></span>
                         </div>
+                        <div class="compare-controls">
+                            <!-- Contenitore unico per search + filtri -->
+                            <div class="search-filters-container">
+                                <!-- Search Box -->
+                                <div class="compare-search">
+                                    <!--<input type="text" id="compare-search-input" placeholder="Search in config..." 
+                                    onkeypress="if(event.key === 'Enter') highlightSearchMatches(this.value)">-->
+                                    <input type="text" id="compare-search-input" placeholder="Search in config..." 
+                                    oninput="highlightSearchMatches(this.value)">
+                                </div>
+
+                                <!-- Filtri inline -->
+                                <div class="compare-filters-inline">
+                                    <label title="Show added lines">
+                                        <input type="checkbox" id="filter-added" checked onchange="toggleFilter('added')">
+                                        <i class="fas fa-plus" style="color:#4caf50"></i>
+                                    </label>
+                                    <label title="Show removed lines">
+                                        <input type="checkbox" id="filter-removed" checked onchange="toggleFilter('removed')">
+                                        <i class="fas fa-minus" style="color:#f44336"></i>
+                                    </label>
+                                    <label title="Show unchanged lines">
+                                        <input type="checkbox" id="filter-unchanged" checked onchange="toggleFilter('unchanged')">
+                                        <i class="fas fa-equals" style="color:#777"></i>
+                                    </label>
+                                </div>
+                            </div>
+                            <input type="button" onclick="closeCompareModal()">
+                            Chiudi
+                            </input>
+                        </div>
+                        
+                        
+                        
+                        <!--
+                        <span class="close-btn" onclick="closeCompareModal()">&times;</span>
+                         -->
                     </div>
-                    <span class="close-btn" onclick="closeCompareModal()">&times;</span>
+                    
                 </div>
                 <div class="modal-body" style="flex: 1; overflow: hidden;">
                     <div class="compare-container">

@@ -125,6 +125,7 @@ body {
     position: relative;
 }
 
+/*
 .left-panel {
     width: 200px;
     background-color: white;
@@ -150,6 +151,34 @@ body {
     color: var(--petrol);
     text-align: center;
     padding: 0 10px;
+}
+*/
+
+.left-panel {
+    width: 200px;
+    background-color: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--gray-medium);
+
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* spinge il footer in basso */
+    min-height: 100%; /* o l'altezza desiderata */
+}
+
+.left-panel > button {
+    width: 100%;
+    padding: 12px;
+    margin-top: 5px;
+}
+
+.version-footer {
+    font-size: 12px;
+    color: var(--petrol);
+    text-align: center;
+    padding: 10px;
 }
 
 .center-panel {
@@ -542,6 +571,15 @@ button:hover {
     font-size: 1.5em;
     cursor: pointer;
 }
+
+/*.close-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 1.5em;
+    cursor: pointer;
+    z-index: 2;
+}*/
 
 .modal-body {
     display: flex;
@@ -1212,6 +1250,12 @@ footer {
     background: var(--petrol);
     color: white;
     position: relative;
+}
+
+.left-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
 }
 
 .compare-controls {
