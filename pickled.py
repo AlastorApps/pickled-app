@@ -27,9 +27,10 @@ import re
 from markupsafe import escape
 from pathlib import Path
 import concurrent.futures
+from threading import Lock
 
 
-__version__ = "1.4.0 beta1"
+__version__ = "1.4.0 beta2"
 
 __favicon__ = "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"
 
@@ -46,6 +47,9 @@ csrf = CSRFProtect(app)
 USERNAME = os.environ.get('PICKLED_USERNAME', 'jar')
 PASSWORD = os.environ.get('PICKLED_PASSWORD', 'cucumber')
 
+
+# Lock globale per l'accesso al file switches.json
+switches_file_lock = Lock()
 
 
 # Percorsi dei file
@@ -210,7 +214,8 @@ def decrypt_password(encrypted_password):
         return ""
     return fernet.decrypt(encrypted_password.encode()).decode()
 
-# Funzioni di persistenza dati
+
+"""
 def load_switches():
     try:
         if not os.path.exists(SWITCHES_FILE):
@@ -236,10 +241,49 @@ def load_switches():
     except Exception as e:
         logger.error(f"Error loading switches: {str(e)}")
         return []
+"""
 
+
+def load_switches():
+    with switches_file_lock:
+        try:
+            if not os.path.exists(SWITCHES_FILE):
+                return []
+
+            with open(SWITCHES_FILE, 'r', encoding='utf-8-sig') as f:
+                content = f.read().strip()
+                if not content:
+                    return []
+                
+                switches_data = json.loads(content)
+                
+                # be sure that enable_password always have a valid value
+                for switch in switches_data:
+                    if not switch.get('enable_password'):
+                        switch['enable_password'] = switch['password']
+                
+                return switches_data
+                
+        except json.JSONDecodeError as e:
+            logger.error(f"Invalid JSON in switches file: {str(e)}")
+            return []
+        except Exception as e:
+            logger.error(f"Error loading switches: {str(e)}")
+            return []
+
+
+"""
 def save_switches(switches_data):
     with open(SWITCHES_FILE, 'w') as f:
         json.dump(switches_data, f, indent=4)
+"""
+
+
+def save_switches(switches_data):
+    with switches_file_lock:
+        with open(SWITCHES_FILE, 'w') as f:
+            json.dump(switches_data, f, indent=4)
+
 
 def load_schedules():
     try:
@@ -560,7 +604,8 @@ def delete_backup():
     except Exception as e:
         logger.error(f"Error deleting backup: {str(e)}")
         return jsonify({'success': False, 'message': str(e)}), 500
-        
+
+
 def backup_switch(params: dict) -> dict:
     """
     Performs network switch configuration backup using multiple connection methods and retrieval techniques.
@@ -594,6 +639,7 @@ def backup_switch(params: dict) -> dict:
     try:
         # Validate switch index
         index = params.get('index')
+
         switches_data = load_switches()
         
         if not isinstance(switches_data, list):
@@ -673,8 +719,8 @@ def backup_switch(params: dict) -> dict:
                 
                 # Retrieve configuration
                 full_output = ""
-                config_commands = ['show running-config\n']
-                
+                config_commands = ['show running-config\n\n\n\n\n\n\n\nsh version\n\n\n\n\n\n\n\n\nsh inventory\n\n\n\n\n\n\n\n\nsh cdp neigh\n\n\n\n\n\n\n\n\n\nsh cdp neigh detail\n\n\n\n\n\n\n\n\n\nsh spanning-tree summary\n\n\n\n\n\n\n\n\n\nsh int status\n\n\n\n\n\n\n\n\n\nsh ip route\n\n\n\n\n\n\n\n\n\nsh vtp status\n\n\n\n\n\n\n\n\n\nsh vlan brief\n\n']
+		
                 for cmd in config_commands:
                     logger.info(f"[{hostname}] Executing: {cmd.strip()}")
                     net_connect.write_channel(cmd)
@@ -705,9 +751,13 @@ def backup_switch(params: dict) -> dict:
                     f.write(clean_output)
 
                 logger.info(f"[{hostname}] Backup completed successfully")
-                switches_data[index]['last_backup_status'] = 'success'
-                switches_data[index]['last_backup_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                save_switches(switches_data)
+
+                with switches_file_lock:
+                    switches_data = load_switches()
+                    switches_data[index]['last_backup_status'] = 'success'
+                    switches_data[index]['last_backup_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                    save_switches(switches_data)
+
                 return {
                     'success': True,
                     'message': "Backup completed",
@@ -719,10 +769,12 @@ def backup_switch(params: dict) -> dict:
 
 
         except Exception as e:
-            switches_data[index]['last_backup_status'] = 'failed'
-            switches_data[index]['last_backup_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            save_switches(switches_data)
             logger.warning(f"[{hostname}] Interactive method failed, trying simple method: {str(e)}")
+
+            with switches_file_lock:
+                switches_data[index]['last_backup_status'] = 'failed'
+                switches_data[index]['last_backup_time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                save_switches(switches_data)
             
             # Fallback to simple method
             try:
@@ -781,6 +833,7 @@ def backup_switch(params: dict) -> dict:
             'ip': ip if 'ip' in locals() else 'unknown',
             'error_type': 'UnexpectedError'
         }
+
 
 
 """
